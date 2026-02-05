@@ -8,6 +8,11 @@ import { useSessionView } from "@/stores/sessionSelectors";
 
 type SubmitStatus = { type: "idle" } | { type: "submitting" } | { type: "error"; message: string };
 
+function isSafeNext(next: string) {
+  // open redirect 방지: 내부 경로만 허용
+  return next.startsWith("/") && !next.startsWith("//");
+}
+
 export default function Home() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -40,7 +45,9 @@ export default function Home() {
       // ✅ next가 있으면 그쪽으로 복귀
       const params = new URLSearchParams(location.search);
       const next = params.get("next");
-      if (next) navigate(next, { replace: true });
+      if (next && isSafeNext(next)) {
+        navigate(next, { replace: true });
+      }
     } catch (err) {
       if (err instanceof CreateSessionError) {
         setStatus({ type: "error", message: CREATE_SESSION_ERROR_MESSAGE[err.code] });
