@@ -1,11 +1,11 @@
 // src/services/sessionService.ts
 import axios from "axios";
-import { apiClient } from "./apiClient";
+import { apiClient, AppError } from "./apiClient";
 
-export type CreateSessionErrorCode = "NICKNAME_DUPLICATE" | "UNKNOWN";
+export type CreateSessionErrorCode = "NICKNAME_DUPLICATE" | "NETWORK" | "SERVER" | "UNKNOWN";
+
 export class CreateSessionError extends Error {
   code: CreateSessionErrorCode;
-
   constructor(code: CreateSessionErrorCode, message?: string) {
     super(message ?? code);
     this.name = "CreateSessionError";
@@ -17,13 +17,20 @@ export type SessionResponse = {
   userId: number;
   nickname: string;
 };
+
 export async function createSession(nickname: string): Promise<SessionResponse> {
   try {
     const res = await apiClient.post<SessionResponse>("/api/session", { nickname });
     return res.data;
   } catch (err) {
-    if (axios.isAxiosError(err) && err.response) {
-      if (err.response.status === 409 && err.response.data?.message === "NICKNAME_DUPLICATE") {
+    if (err instanceof AppError) {
+      if (err.code === "NETWORK") throw new CreateSessionError("NETWORK");
+      if (err.code === "SERVER") throw new CreateSessionError("SERVER");
+      throw new CreateSessionError("UNKNOWN");
+    }
+
+    if (axios.isAxiosError(err)) {
+      if (err.response?.status === 409 && err.response.data?.message === "NICKNAME_DUPLICATE") {
         throw new CreateSessionError("NICKNAME_DUPLICATE");
       }
     }

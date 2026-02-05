@@ -1,7 +1,14 @@
 // src/pages/GuideDetail.tsx
-import { Link, useParams } from "react-router";
+import { Link, useNavigate, useParams } from "react-router";
 import { useEffect, useMemo, useState } from "react";
-import { getGuideDetail, type GuideDetail as GuideDetailType } from "@/services/guideDetailService";
+import {
+  getGuideDetail,
+  GuideDetailError,
+  type GuideDetail as GuideDetailType,
+} from "@/services/guideDetailService";
+import { DELETE_GUIDE_ERROR_MESSAGE, GUIDE_DETAIL_ERROR_MESSAGE } from "@/constants/errorMessages";
+import { VALIDATION_MESSAGE } from "@/constants/validationMessages";
+import { deleteGuide, DeleteGuideError } from "@/services/guideDeleteService";
 
 type LoadState =
   | { type: "idle" }
@@ -10,18 +17,20 @@ type LoadState =
   | { type: "error"; message: string };
 
 export default function GuideDetail() {
+  const navigate = useNavigate();
   const { guideId } = useParams();
 
   const id = useMemo(() => Number(guideId), [guideId]);
 
   const [state, setState] = useState<LoadState>({ type: "idle" });
+  const [actionError, setActionError] = useState<string | null>(null);
 
   useEffect(() => {
     let ignore = false;
 
     async function run() {
       if (!Number.isInteger(id) || id <= 0) {
-        setState({ type: "error", message: "잘못된 접근입니다." });
+        setState({ type: "error", message: VALIDATION_MESSAGE.INVALID_GUIDE_ID });
         return;
       }
 
@@ -30,9 +39,13 @@ export default function GuideDetail() {
         const data = await getGuideDetail(id);
         if (ignore) return;
         setState({ type: "success", data });
-      } catch {
+      } catch (err) {
         if (ignore) return;
-        setState({ type: "error", message: "공략을 불러오지 못했습니다." });
+        if (err instanceof GuideDetailError) {
+          setState({ type: "error", message: GUIDE_DETAIL_ERROR_MESSAGE[err.code] });
+        } else {
+          setState({ type: "error", message: GUIDE_DETAIL_ERROR_MESSAGE.UNKNOWN });
+        }
       }
     }
 
@@ -41,6 +54,25 @@ export default function GuideDetail() {
       ignore = true;
     };
   }, [id]);
+
+  const onDelete = async () => {
+    if (!Number.isInteger(id) || id <= 0) return;
+
+    const ok = window.confirm("정말 삭제할까요?");
+    if (!ok) return;
+
+    setActionError(null);
+    try {
+      await deleteGuide(id);
+      navigate("/guides", { replace: true });
+    } catch (err) {
+      if (err instanceof DeleteGuideError) {
+        setActionError(DELETE_GUIDE_ERROR_MESSAGE[err.code]);
+      } else {
+        setActionError(DELETE_GUIDE_ERROR_MESSAGE.UNKNOWN);
+      }
+    }
+  };
 
   const content = (() => {
     if (state.type === "loading" || state.type === "idle") return "불러오는 중...";
@@ -94,10 +126,30 @@ export default function GuideDetail() {
               {state.data.content}
             </div>
 
-            <div className="mt-8 flex justify-end">
+            {actionError && (
+              <div className="mt-6 rounded-lg border p-3 text-sm text-red-600">{actionError}</div>
+            )}
+
+            <div className="mt-6 flex items-center justify-between gap-2">
               <Link to="/guides" className="text-sm text-zinc-700 hover:underline">
                 목록으로
               </Link>
+
+              <div className="flex justify-end gap-2">
+                <Link
+                  to={`/guides/${id}/edit`}
+                  className="rounded-md border px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-50"
+                >
+                  수정
+                </Link>
+                <button
+                  type="button"
+                  onClick={onDelete}
+                  className="rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-500"
+                >
+                  삭제
+                </button>
+              </div>
             </div>
           </article>
         )}

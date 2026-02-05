@@ -3,13 +3,12 @@ import { Link, useNavigate } from "react-router";
 import { useState } from "react";
 import { createGuide, CreateGuideError } from "@/services/guideCreateService";
 import { GAMES } from "@/mocks/data/guides";
-import { useSessionView } from "@/stores/sessionSelectors";
+import { CREATE_GUIDE_ERROR_MESSAGE } from "@/constants/errorMessages";
 
 type SubmitStatus = { type: "idle" } | { type: "submitting" } | { type: "error"; message: string };
 
 export default function GuideCreate() {
   const navigate = useNavigate();
-  const { sessionNickname } = useSessionView();
 
   const [status, setStatus] = useState<SubmitStatus>({ type: "idle" });
 
@@ -20,14 +19,7 @@ export default function GuideCreate() {
     e.preventDefault();
     if (isSubmitting) return;
 
-    const author = sessionNickname;
-    if (!author) {
-      setStatus({ type: "error", message: "로그인이 필요합니다." });
-      return;
-    }
-
     const fd = new FormData(e.currentTarget);
-
     const title = String(fd.get("title") ?? "").trim();
     const game = String(fd.get("game") ?? "").trim();
     const excerpt = String(fd.get("excerpt") ?? "").trim();
@@ -41,13 +33,13 @@ export default function GuideCreate() {
     setStatus({ type: "submitting" });
 
     try {
-      await createGuide({ title, game, excerpt, content, author });
+      await createGuide({ title, game, excerpt, content });
       navigate("/guides");
-    } catch (e) {
-      if (e instanceof CreateGuideError) {
-        setStatus({ type: "error", message: e.code });
+    } catch (err) {
+      if (err instanceof CreateGuideError) {
+        setStatus({ type: "error", message: CREATE_GUIDE_ERROR_MESSAGE[err.code] });
       } else {
-        setStatus({ type: "error", message: "UNKNOWN" });
+        setStatus({ type: "error", message: CREATE_GUIDE_ERROR_MESSAGE.UNKNOWN });
       }
       return;
     } finally {

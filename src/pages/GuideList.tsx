@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router";
-import { listGuides, type GuideItem } from "@/services/guideListService";
+import { listGuides, ListGuidesError, type GuideItem } from "@/services/guideListService";
 import { useSessionView } from "@/stores/sessionSelectors";
+import { LIST_GUIDES_ERROR_MESSAGE } from "@/constants/errorMessages";
 
 export default function GuideList() {
   const { sessionNickname } = useSessionView();
@@ -11,6 +12,7 @@ export default function GuideList() {
   const [page, setPage] = useState(0);
   const [isFetching, setIsFetching] = useState(false);
   const [hasNext, setHasNext] = useState(true);
+  const [errorBanner, setErrorBanner] = useState<string | null>(null);
 
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
@@ -27,6 +29,17 @@ export default function GuideList() {
         setItems(data.items);
         setPage(0);
         setHasNext(data.nextPage !== null);
+      } catch (err) {
+        if (ignore) return;
+
+        if (err instanceof ListGuidesError) {
+          setErrorBanner(LIST_GUIDES_ERROR_MESSAGE[err.code]);
+        } else {
+          setErrorBanner(LIST_GUIDES_ERROR_MESSAGE.UNKNOWN);
+        }
+
+        setItems([]);
+        setHasNext(false);
       } finally {
         if (!ignore) setIsFetching(false);
       }
@@ -50,6 +63,12 @@ export default function GuideList() {
       setHasNext(data.nextPage !== null);
       setItems((prev) => [...prev, ...data.items]);
       setPage(nextPage);
+    } catch (err) {
+      if (err instanceof ListGuidesError) {
+        setErrorBanner(LIST_GUIDES_ERROR_MESSAGE[err.code]);
+      } else {
+        setErrorBanner("추가 로드에 실패했습니다.");
+      }
     } finally {
       setIsFetching(false);
     }
@@ -117,6 +136,12 @@ export default function GuideList() {
       </header>
 
       <main className="mx-auto max-w-6xl p-4">
+        {errorBanner && (
+          <div className="mb-4 rounded-xl border bg-white p-3 text-sm text-red-600">
+            {errorBanner}
+          </div>
+        )}
+
         {/* 상단 띠: 정렬/필터 + 글쓰기 버튼 */}
         <div className="mb-4 flex items-center justify-between rounded-xl border bg-white p-3">
           <div className="flex items-center gap-2">
