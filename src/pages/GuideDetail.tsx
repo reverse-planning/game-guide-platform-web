@@ -9,6 +9,10 @@ import {
 import { DELETE_GUIDE_ERROR_MESSAGE, GUIDE_DETAIL_ERROR_MESSAGE } from "@/constants/errorMessages";
 import { VALIDATION_MESSAGE } from "@/constants/validationMessages";
 import { deleteGuide, DeleteGuideError } from "@/services/guideDeleteService";
+import { GnbShell } from "@/components/gnb/GnbShell";
+import { GnbLeft } from "@/components/gnb/GnbLeft";
+import { GnbCtaLink } from "@/components/gnb/GnbCtaLink";
+import { PageShell } from "@/components/shell/PageShell";
 
 type LoadState =
   | { type: "idle" }
@@ -81,25 +85,8 @@ export default function GuideDetail() {
   })();
 
   return (
-    <div className="min-h-dvh bg-zinc-50">
-      <header className="sticky top-0 z-10 border-b bg-white">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 p-4">
-          <div className="flex items-center gap-4">
-            <Link to="/" className="text-lg font-semibold">
-              Game Guide
-            </Link>
-            <Link to="/guides" className="text-sm text-zinc-700 hover:underline">
-              공략글
-            </Link>
-          </div>
-          <Link
-            to="/guides/new"
-            className="rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-800"
-          >
-            공략 등록
-          </Link>
-        </div>
-      </header>
+    <PageShell>
+      <GnbShell left={<GnbLeft />} right={<GnbCtaLink to="/guides/new">공략 등록</GnbCtaLink>} />
 
       <main className="mx-auto max-w-3xl p-4">
         {state.type !== "success" ? (
@@ -154,6 +141,6 @@ export default function GuideDetail() {
           </article>
         )}
       </main>
-    </div>
+    </PageShell>
   );
 }

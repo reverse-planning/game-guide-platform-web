@@ -4,6 +4,9 @@ import { useState } from "react";
 import { createGuide, CreateGuideError } from "@/services/guideCreateService";
 import { GAMES } from "@/mocks/data/guides";
 import { CREATE_GUIDE_ERROR_MESSAGE } from "@/constants/errorMessages";
+import { GnbShell } from "@/components/gnb/GnbShell";
+import { GnbLeft } from "@/components/gnb/GnbLeft";
+import { PageShell } from "@/components/shell/PageShell";
 
 type SubmitStatus = { type: "idle" } | { type: "submitting" } | { type: "error"; message: string };
 
@@ -48,20 +51,8 @@ export default function GuideCreate() {
   };
 
   return (
-    <div className="min-h-dvh bg-zinc-50">
-      <header className="sticky top-0 z-10 border-b bg-white">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 p-4">
-          <div className="flex items-center gap-4">
-            <Link to="/" className="text-lg font-semibold">
-              Game Guide
-            </Link>
-            <Link to="/guides" className="text-sm text-zinc-700 hover:underline">
-              공략글
-            </Link>
-          </div>
-          <div className="text-sm text-zinc-600">공략 등록</div>
-        </div>
-      </header>
+    <PageShell>
+      <GnbShell left={<GnbLeft />} right={<div className="text-sm text-zinc-600">공략 등록</div>} />
 
       <main className="mx-auto max-w-3xl p-4">
         <div className="rounded-xl border bg-white p-6 shadow-sm">
@@ -135,6 +126,6 @@ export default function GuideCreate() {
           </form>
         </div>
       </main>
-    </div>
+    </PageShell>
   );
 }

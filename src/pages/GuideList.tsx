@@ -1,11 +1,16 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import { listGuides, ListGuidesError, type GuideItem } from "@/services/guideListService";
 import { useSessionView } from "@/stores/sessionSelectors";
 import { LIST_GUIDES_ERROR_MESSAGE } from "@/constants/errorMessages";
+import { GnbShell } from "@/components/gnb/GnbShell";
+import { GnbLeft } from "@/components/gnb/GnbLeft";
+import { GnbSearch } from "@/components/gnb/GnbSearch";
+import { GnbAuthStatus } from "@/components/gnb/GnbAuthStatus";
+import { PageShell } from "@/components/shell/PageShell";
 
 export default function GuideList() {
-  const { sessionNickname } = useSessionView();
+  const { isAuthed, sessionNickname } = useSessionView();
 
   const [query, setQuery] = useState("");
   const [items, setItems] = useState<GuideItem[]>([]);
@@ -92,48 +97,15 @@ export default function GuideList() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, query, isFetching, hasNext]);
 
-  const headerRightText = useMemo(() => {
-    return sessionNickname ? `${sessionNickname}님` : "로그인을 해주세요";
-  }, [sessionNickname]);
-
   return (
-    <div className="min-h-dvh bg-zinc-50">
-      {/* GNB + Search */}
-      <header className="sticky top-0 z-10 border-b bg-white">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 p-4">
-          <div className="flex items-center gap-4">
-            <Link to="/" className="text-lg font-semibold">
-              Game Guide
-            </Link>
-            <Link to="/guides" className="text-sm text-zinc-700 hover:underline">
-              공략글
-            </Link>
-          </div>
-
-          <div className="flex w-full max-w-xl items-center gap-2">
-            <div className="relative w-full">
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="공략 검색 (제목/본문/게임)"
-                className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-zinc-900"
-              />
-              {query && (
-                <button
-                  type="button"
-                  onClick={() => setQuery("")}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded px-2 py-1 text-xs text-zinc-500 hover:bg-zinc-100"
-                  aria-label="검색어 지우기"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div className="shrink-0 text-sm text-zinc-600">{headerRightText}</div>
-        </div>
-      </header>
+    <PageShell>
+      <GnbShell
+        left={<GnbLeft />}
+        center={
+          <GnbSearch value={query} onChange={setQuery} placeholder="공략 검색 (제목/본문/게임)" />
+        }
+        right={<GnbAuthStatus isAuthed={isAuthed} nickname={sessionNickname} />}
+      />
 
       <main className="mx-auto max-w-6xl p-4">
         {errorBanner && (
@@ -194,6 +166,6 @@ export default function GuideList() {
           {!isFetching && !hasNext && "마지막 콘텐츠입니다."}
         </div>
       </main>
-    </div>
+    </PageShell>
   );
 }
