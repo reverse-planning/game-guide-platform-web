@@ -1,7 +1,9 @@
 // src/services/guideUpdateService.ts
 import axios from "axios";
-import type { GuideItem } from "./guideListService";
 import { apiClient, AppError } from "./apiClient";
+import type { UpdateGuideRequestDto, UpdateGuideResponseDto } from "@/types/guide";
+import type { GuideId } from "@/types/id";
+import { getSessionUserIdOrThrow, SessionRequiredError } from "@/services/sessionResolver";
 
 export type UpdateGuideErrorCode = "BAD_REQUEST" | "NOT_FOUND" | "NETWORK" | "SERVER" | "UNKNOWN";
 
@@ -14,25 +16,26 @@ export class UpdateGuideError extends Error {
   }
 }
 
-export type UpdateGuideBody = {
-  title: string;
-  game: string;
-  excerpt: string;
-  content: string;
-};
-
-export type UpdateGuideResponse = GuideItem & {
-  content: string;
-};
+export type UpdateGuideBody = Pick<UpdateGuideRequestDto, "title" | "game" | "body">;
 
 export async function updateGuide(
-  guideId: number,
+  guideId: GuideId,
   body: UpdateGuideBody,
-): Promise<UpdateGuideResponse> {
+): Promise<UpdateGuideResponseDto> {
   try {
-    const res = await apiClient.patch<UpdateGuideResponse>(`/api/guides/${guideId}`, body);
+    const userId = getSessionUserIdOrThrow();
+
+    const req: UpdateGuideRequestDto = {
+      ...body,
+      userId,
+    };
+
+    const res = await apiClient.patch<UpdateGuideResponseDto>(`/api/guides/${guideId}`, req);
     return res.data;
   } catch (err) {
+    // ✅ 요청 전 세션 누락은 "도메인 실패"가 아니라 "흐름 위반" → 그대로 올림
+    if (err instanceof SessionRequiredError) throw err;
+
     if (err instanceof AppError) {
       if (err.code === "NETWORK") throw new UpdateGuideError("NETWORK");
       if (err.code === "SERVER") throw new UpdateGuideError("SERVER");

@@ -17,20 +17,14 @@ export class AppError extends Error {
 
 export const apiClient = axios.create();
 
-function toHomeWithNext() {
-  const next = window.location.pathname + window.location.search;
-  window.location.replace(`/?next=${encodeURIComponent(next)}`);
-}
-
 apiClient.interceptors.response.use(
   (res) => res,
   (err: AxiosError) => {
-    if (err.response?.status === 401) {
-      useSessionStore.getState().resetSession();
+    const status = err.response?.status;
 
-      // ✅ 이미 홈이면 추가 이동 불필요 (무한 replace 방지)
-      if (window.location.pathname !== "/") toHomeWithNext();
-      return Promise.reject(err); // ✅ 401도 AxiosError로 유지(서비스가 필요하면 볼 수 있게)
+    if (status === 401) {
+      useSessionStore.getState().resetSession();
+      return Promise.reject(new AppError("UNAUTHORIZED", "UNAUTHORIZED", 401));
     }
 
     // Network

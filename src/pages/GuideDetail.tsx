@@ -1,11 +1,7 @@
 // src/pages/GuideDetail.tsx
 import { Link, useNavigate, useParams } from "react-router";
 import { useEffect, useMemo, useState } from "react";
-import {
-  getGuideDetail,
-  GuideDetailError,
-  type GuideDetail as GuideDetailType,
-} from "@/services/guideDetailService";
+import { getGuideDetail, GuideDetailError } from "@/services/guideDetailService";
 import { DELETE_GUIDE_ERROR_MESSAGE, GUIDE_DETAIL_ERROR_MESSAGE } from "@/constants/errorMessages";
 import { VALIDATION_MESSAGE } from "@/constants/validationMessages";
 import { deleteGuide, DeleteGuideError } from "@/services/guideDeleteService";
@@ -13,6 +9,8 @@ import { GnbShell } from "@/components/gnb/GnbShell";
 import { GnbLeft } from "@/components/gnb/GnbLeft";
 import { GnbCtaLink } from "@/components/gnb/GnbCtaLink";
 import { PageShell } from "@/components/shell/PageShell";
+import type { GuideDetail as GuideDetailType } from "@/types/guide";
+import { SessionRequiredError } from "@/services/sessionResolver";
 
 type LoadState =
   | { type: "idle" }
@@ -70,6 +68,13 @@ export default function GuideDetail() {
       await deleteGuide(id);
       navigate("/guides", { replace: true });
     } catch (err) {
+      // ✅ 세션 누락: 홈으로 보내고 next로 복귀 가능하게
+      if (err instanceof SessionRequiredError) {
+        const next = location.pathname + location.search;
+        navigate(`/?next=${encodeURIComponent(next)}`, { replace: true });
+        return;
+      }
+
       if (err instanceof DeleteGuideError) {
         setActionError(DELETE_GUIDE_ERROR_MESSAGE[err.code]);
       } else {
@@ -105,12 +110,8 @@ export default function GuideDetail() {
               <span className="shrink-0 text-sm text-zinc-500">{state.data.updatedAt}</span>
             </div>
 
-            <p className="mt-4 rounded-lg bg-zinc-50 p-4 text-sm text-zinc-700">
-              {state.data.excerpt}
-            </p>
-
             <div className="prose prose-zinc mt-6 max-w-none whitespace-pre-wrap text-sm">
-              {state.data.content}
+              {state.data.body}
             </div>
 
             {actionError && (

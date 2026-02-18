@@ -1,5 +1,5 @@
 // src/pages/GuideEdit.tsx
-import { Link, useNavigate, useParams } from "react-router";
+import { Link, useLocation, useNavigate, useParams } from "react-router";
 import { useEffect, useMemo, useState } from "react";
 import { getGuideDetail } from "@/services/guideDetailService";
 import { updateGuide, UpdateGuideError } from "@/services/guideUpdateService";
@@ -8,12 +8,12 @@ import { VALIDATION_MESSAGE } from "@/constants/validationMessages";
 import { GnbShell } from "@/components/gnb/GnbShell";
 import { GnbLeft } from "@/components/gnb/GnbLeft";
 import { PageShell } from "@/components/shell/PageShell";
+import { SessionRequiredError } from "@/services/sessionResolver";
 
 type FormState = {
   title: string;
   game: string;
-  excerpt: string;
-  content: string;
+  body: string;
 };
 
 type PageState =
@@ -24,8 +24,9 @@ type PageState =
 
 export default function GuideEdit() {
   const navigate = useNavigate();
-  const { guideId } = useParams();
+  const location = useLocation();
 
+  const { guideId } = useParams();
   const id = useMemo(() => Number(guideId), [guideId]);
 
   const [state, setState] = useState<PageState>({ type: "loading" });
@@ -49,8 +50,7 @@ export default function GuideEdit() {
           form: {
             title: data.title,
             game: data.game,
-            excerpt: data.excerpt,
-            content: data.content,
+            body: data.body,
           },
         });
       } catch {
@@ -74,26 +74,31 @@ export default function GuideEdit() {
     const fd = new FormData(e.currentTarget);
     const title = String(fd.get("title") ?? "").trim();
     const game = String(fd.get("game") ?? "").trim();
-    const excerpt = String(fd.get("excerpt") ?? "").trim();
-    const content = String(fd.get("content") ?? "").trim();
+    const body = String(fd.get("body") ?? "").trim();
 
-    if (!title || !game || !excerpt || !content) {
+    if (!title || !game || !body) {
       setBanner("모든 입력값은 필수입니다.");
       return;
     }
 
-    setState({ type: "saving", form: { title, game, excerpt, content } });
+    setState({ type: "saving", form: { title, game, body } });
 
     try {
-      await updateGuide(id, { title, game, excerpt, content });
+      await updateGuide(id, { title, game, body });
       navigate(`/guides/${id}`, { replace: true });
     } catch (err) {
+      // ✅ 세션 누락: 홈으로 보내고 next로 복귀 가능하게
+      if (err instanceof SessionRequiredError) {
+        const next = location.pathname + location.search;
+        navigate(`/?next=${encodeURIComponent(next)}`, { replace: true });
+        return;
+      }
       if (err instanceof UpdateGuideError) {
         setBanner(UPDATE_GUIDE_ERROR_MESSAGE[err.code]);
       } else {
         setBanner(UPDATE_GUIDE_ERROR_MESSAGE.UNKNOWN);
       }
-      setState({ type: "ready", form: { title, game, excerpt, content } });
+      setState({ type: "ready", form: { title, game, body } });
     }
   };
 
@@ -156,21 +161,11 @@ export default function GuideEdit() {
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium">요약 (excerpt)</label>
-              <textarea
-                name="excerpt"
-                rows={3}
-                defaultValue={form.excerpt}
-                className="w-full resize-none rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-zinc-900"
-              />
-            </div>
-
-            <div>
               <label className="mb-1 block text-sm font-medium">본문</label>
               <textarea
-                name="content"
+                name="body"
                 rows={10}
-                defaultValue={form.content}
+                defaultValue={form.body}
                 className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-zinc-900"
               />
             </div>

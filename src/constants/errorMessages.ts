@@ -44,6 +44,7 @@ export const UPDATE_GUIDE_ERROR_MESSAGE: Record<UpdateGuideErrorCode, string> = 
 
 export const DELETE_GUIDE_ERROR_MESSAGE: Record<DeleteGuideErrorCode, string> = {
   NOT_FOUND: "이미 삭제된 공략글입니다.",
+  FORBIDDEN: "삭제 권한이 없습니다.",
   NETWORK: "네트워크 연결을 확인해주세요.",
   SERVER: "서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
   UNKNOWN: "알 수 없는 오류가 발생했습니다.",

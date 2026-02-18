@@ -7,6 +7,7 @@ import { CREATE_GUIDE_ERROR_MESSAGE } from "@/constants/errorMessages";
 import { GnbShell } from "@/components/gnb/GnbShell";
 import { GnbLeft } from "@/components/gnb/GnbLeft";
 import { PageShell } from "@/components/shell/PageShell";
+import { SessionRequiredError } from "@/services/sessionResolver";
 
 type SubmitStatus = { type: "idle" } | { type: "submitting" } | { type: "error"; message: string };
 
@@ -25,10 +26,9 @@ export default function GuideCreate() {
     const fd = new FormData(e.currentTarget);
     const title = String(fd.get("title") ?? "").trim();
     const game = String(fd.get("game") ?? "").trim();
-    const excerpt = String(fd.get("excerpt") ?? "").trim();
-    const content = String(fd.get("content") ?? "").trim();
+    const body = String(fd.get("body") ?? "").trim();
 
-    if (!title || !game || !excerpt || !content) {
+    if (!title || !game || !body) {
       setStatus({ type: "error", message: "모든 입력값은 필수입니다." });
       return;
     }
@@ -36,9 +36,16 @@ export default function GuideCreate() {
     setStatus({ type: "submitting" });
 
     try {
-      await createGuide({ title, game, excerpt, content });
+      await createGuide({ title, game, body });
       navigate("/guides");
     } catch (err) {
+      // ✅ 세션 누락: 홈으로 보내고 next로 복귀 가능하게
+      if (err instanceof SessionRequiredError) {
+        const next = location.pathname + location.search;
+        navigate(`/?next=${encodeURIComponent(next)}`, { replace: true });
+        return;
+      }
+
       if (err instanceof CreateGuideError) {
         setStatus({ type: "error", message: CREATE_GUIDE_ERROR_MESSAGE[err.code] });
       } else {
@@ -86,20 +93,9 @@ export default function GuideCreate() {
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium">요약 (excerpt)</label>
-              <textarea
-                name="excerpt"
-                rows={3}
-                placeholder="리스트에서 보여줄 요약 문장"
-                className="w-full resize-none rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-zinc-900"
-              />
-              <p className="mt-1 text-xs text-zinc-500">리스트 카드에서 line-clamp로 노출됩니다.</p>
-            </div>
-
-            <div>
               <label className="mb-1 block text-sm font-medium">본문</label>
               <textarea
-                name="content"
+                name="body"
                 rows={10}
                 placeholder="공략 내용을 입력하세요"
                 className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-zinc-900"
