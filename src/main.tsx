@@ -2,11 +2,10 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App.tsx";
-
-const IS_DEMO = import.meta.env.VITE_APP_MODE === "demo";
+import { ENV } from "./constants/env.ts";
 
 async function enableMocking() {
-  if (!IS_DEMO) {
+  if (ENV.APP_MODE !== "mock") {
     return;
   }
 
