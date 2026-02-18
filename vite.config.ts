@@ -11,4 +11,13 @@ export default defineConfig({
       "@": path.resolve(__dirname, "src"),
     },
   },
+  server: {
+    proxy: {
+      "/api": {
+        target: "https://api.doi2.my",
+        changeOrigin: true,
+        secure: true,
+      },
+    },
+  },
 });

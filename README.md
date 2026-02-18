@@ -41,3 +41,11 @@
 
 1. SessionStorage: 브라우저 탭 생명주기 동안 1회
 1. LocalStorage: 디바이스 단위 영구 1회
+
+---
+
+TODO
+
+- 세션 서버 관리
+- msw 수정
+- 에러 관리 공부
