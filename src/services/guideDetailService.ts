@@ -1,7 +1,7 @@
 // src/services/guideDetailService.ts
-import type { GuideItem } from "./guideListService";
 import { apiClient, AppError } from "./apiClient";
 import axios from "axios";
+import type { GuideDetailDto } from "@/types/guide";
 
 export type GuideDetailErrorCode = "NOT_FOUND" | "NETWORK" | "SERVER" | "UNKNOWN";
 
@@ -14,13 +14,9 @@ export class GuideDetailError extends Error {
   }
 }
 
-export type GuideDetail = GuideItem & {
-  content: string;
-};
-
-export async function getGuideDetail(guideId: number): Promise<GuideDetail> {
+export async function getGuideDetail(guideId: number): Promise<GuideDetailDto> {
   try {
-    const res = await apiClient.get<GuideDetail>(`/api/guides/${guideId}`);
+    const res = await apiClient.get<GuideDetailDto>(`/api/guides/${guideId}`);
     return res.data;
   } catch (err) {
     if (err instanceof AppError) {

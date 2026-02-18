@@ -4,11 +4,10 @@ import { getMockSession } from "../state/mockSession";
 import { getGuideContent, setGuideContent } from "../state/guideContent";
 import { findGuide } from "../state/guideDb";
 
-function defaultContent(found: { title: string; game: string; author: string; excerpt: string }) {
+function defaultContent(found: { title: string; game: string; author: string }) {
   return (
     `# ${found.title}\n\n` +
     `- 게임: ${found.game}\n- 작성자: ${found.author}\n\n` +
-    `## 핵심 요약\n${found.excerpt}\n\n` +
     `## 상세 공략\n여기에 상세 공략 내용을 넣는다고 가정합니다.\n(현재는 MSW mock)\n`
   );
 }

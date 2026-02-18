@@ -1,5 +1,11 @@
 import axios from "axios";
 import { apiClient, AppError } from "./apiClient";
+import {
+  toGuideListResult,
+  type GuideListQuery,
+  type GuideListResponseDto,
+  type GuideListResult,
+} from "@/types/guide";
 
 export type ListGuidesErrorCode = "RATE_LIMITED" | "NETWORK" | "SERVER" | "UNKNOWN";
 
@@ -12,26 +18,17 @@ export class ListGuidesError extends Error {
   }
 }
 
-export type GuideItem = {
-  id: number;
-  title: string;
-  excerpt: string;
-  game: string;
-  author: string;
-  updatedAt: string;
-};
-
-export type ListGuidesResponse = {
-  items: GuideItem[];
-  nextPage: number | null;
-};
-
-export async function listGuides(params: { q: string; page: number }): Promise<ListGuidesResponse> {
+export async function listGuides(params: GuideListQuery): Promise<GuideListResult> {
   try {
-    const res = await apiClient.get<ListGuidesResponse>("/api/guides", {
-      params: { q: params.q, page: params.page },
+    const res = await apiClient.get<GuideListResponseDto>("/api/guide", {
+      params: {
+        ...(params.query ? { query: params.query } : {}),
+        page: params.page,
+        size: params.size,
+        sort: params.sort,
+      },
     });
-    return res.data;
+    return toGuideListResult(res.data);
   } catch (err) {
     if (err instanceof AppError) {
       if (err.code === "NETWORK") throw new ListGuidesError("NETWORK");

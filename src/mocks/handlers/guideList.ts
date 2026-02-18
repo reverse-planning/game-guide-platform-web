@@ -25,7 +25,7 @@ export const guideListHandlers = [
 
     // 1️⃣ 검색 필터
     const filtered = q
-      ? all.filter((it) => `${it.title} ${it.excerpt} ${it.game}`.toLowerCase().includes(q))
+      ? all.filter((it) => `${it.title} ${it.game}`.toLowerCase().includes(q))
       : all;
 
     // 2️⃣ 페이지네이션

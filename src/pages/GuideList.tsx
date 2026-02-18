@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
-import { listGuides, ListGuidesError, type GuideItem } from "@/services/guideListService";
+import { listGuides, ListGuidesError } from "@/services/guideListService";
 import { useSessionView } from "@/stores/sessionSelectors";
 import { LIST_GUIDES_ERROR_MESSAGE } from "@/constants/errorMessages";
 import { GnbShell } from "@/components/gnb/GnbShell";
@@ -8,12 +8,13 @@ import { GnbLeft } from "@/components/gnb/GnbLeft";
 import { GnbSearch } from "@/components/gnb/GnbSearch";
 import { GnbAuthStatus } from "@/components/gnb/GnbAuthStatus";
 import { PageShell } from "@/components/shell/PageShell";
+import type { GuideListItem } from "@/types/guide";
 
 export default function GuideList() {
   const { isAuthed, sessionNickname } = useSessionView();
 
   const [query, setQuery] = useState("");
-  const [items, setItems] = useState<GuideItem[]>([]);
+  const [items, setItems] = useState<GuideListItem[]>([]);
   const [page, setPage] = useState(0);
   const [isFetching, setIsFetching] = useState(false);
   const [hasNext, setHasNext] = useState(true);
@@ -28,7 +29,7 @@ export default function GuideList() {
     async function init() {
       setIsFetching(true);
       try {
-        const data = await listGuides({ q: query, page: 0 });
+        const data = await listGuides({ query, page: 0, size: 20 });
         if (ignore) return;
 
         setItems(data.items);
@@ -62,7 +63,7 @@ export default function GuideList() {
     setIsFetching(true);
     try {
       const nextPage = page + 1;
-      const data = await listGuides({ q: query, page: nextPage });
+      const data = await listGuides({ query, page: nextPage, size: 20 });
 
       // 다음 페이지가 null이면 마지막
       setHasNext(data.nextPage !== null);

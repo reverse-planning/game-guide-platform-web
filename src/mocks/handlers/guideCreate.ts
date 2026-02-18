@@ -7,7 +7,6 @@ import { createGuideItem, getNextId } from "../state/guideDb";
 type createGuideBody = {
   title: string;
   game: string;
-  excerpt: string;
   content: string;
 };
 
@@ -18,8 +17,8 @@ export const guideCreateHandlers = [
       return HttpResponse.json({ message: "UNAUTHORIZED" }, { status: 401 });
     }
 
-    const { title, game, excerpt, content } = (await request.json()) as createGuideBody;
-    if (!title || !game || !excerpt || !content) {
+    const { title, game, content } = (await request.json()) as createGuideBody;
+    if (!title || !game || !content) {
       return HttpResponse.json({ message: "BAD_REQUEST" }, { status: 400 });
     }
 
@@ -28,7 +27,6 @@ export const guideCreateHandlers = [
     const item = {
       id: id,
       title: title.startsWith("[") ? title : `[${game}] ${title}`,
-      excerpt,
       game,
       author: session.nickname,
       updatedAt: "방금",

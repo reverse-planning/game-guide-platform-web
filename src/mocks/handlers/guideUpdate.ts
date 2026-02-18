@@ -7,7 +7,6 @@ import { findGuide, updateGuideItem } from "../state/guideDb";
 type updateGuideBody = {
   title: string;
   game: string;
-  excerpt: string;
   content: string;
 };
 
@@ -29,8 +28,8 @@ export const guideUpdateHandlers = [
       return HttpResponse.json({ message: "FORBIDDEN" }, { status: 403 });
     }
 
-    const { title, game, excerpt, content } = (await request.json()) as updateGuideBody;
-    if (!title || !game || !excerpt || !content) {
+    const { title, game, content } = (await request.json()) as updateGuideBody;
+    if (!title || !game || !content) {
       return HttpResponse.json({ message: "BAD_REQUEST" }, { status: 400 });
     }
 
@@ -38,7 +37,6 @@ export const guideUpdateHandlers = [
       ...prev,
       title: title.startsWith("[") ? title : `[${game}] ${title}`,
       game,
-      excerpt,
       updatedAt: "방금",
     };
 

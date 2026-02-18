@@ -1,6 +1,7 @@
 // src/services/sessionService.ts
 import axios from "axios";
 import { apiClient, AppError } from "./apiClient";
+import type { SessionDto } from "@/types/session";
 
 export type CreateSessionErrorCode = "NICKNAME_DUPLICATE" | "NETWORK" | "SERVER" | "UNKNOWN";
 
@@ -13,14 +14,9 @@ export class CreateSessionError extends Error {
   }
 }
 
-export type SessionResponse = {
-  userId: number;
-  nickname: string;
-};
-
-export async function createSession(nickname: string): Promise<SessionResponse> {
+export async function createSession(nickname: string): Promise<SessionDto> {
   try {
-    const res = await apiClient.post<SessionResponse>("/api/session", { nickname });
+    const res = await apiClient.post<SessionDto>("/api/session", { nickname });
     return res.data;
   } catch (err) {
     if (err instanceof AppError) {
@@ -39,8 +35,8 @@ export async function createSession(nickname: string): Promise<SessionResponse> 
 }
 
 // 부트스트랩: 현재 세션 조회 (쿠키 기반이면 새로고침 후에도 복구 가능)
-export async function getSession(): Promise<SessionResponse> {
-  const res = await apiClient.get<SessionResponse>("/api/session");
+export async function getSession(): Promise<SessionDto> {
+  const res = await apiClient.get<SessionDto>("/api/session");
   return res.data;
 }
 

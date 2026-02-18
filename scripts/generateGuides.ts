@@ -74,10 +74,6 @@ function makeContent(): string {
   return Array.from({ length: count }, () => pick(SENTENCES)).join("\n\n");
 }
 
-function makeExcerpt(content: string): string {
-  return content.split("\n")[0];
-}
-
 const guides = Array.from({ length: 120 }, (_, i) => {
   const game = pick(GAMES);
   const author = pick(AUTHORS);
@@ -86,7 +82,6 @@ const guides = Array.from({ length: 120 }, (_, i) => {
   return {
     id: i + 1,
     title: uniqueTitle(game), // ✅ 전부 다름
-    excerpt: makeExcerpt(content), // ✅ content 기반
     content, // ✅ 전부 다름
     game,
     author, // ⭕ 중복 허용

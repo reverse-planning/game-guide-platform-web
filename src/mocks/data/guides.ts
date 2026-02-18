@@ -106,7 +106,6 @@ const TIMES = [
 export type GuideItem = {
   id: number;
   title: string;
-  excerpt: string;
   game: string;
   author: string;
   updatedAt: string;
