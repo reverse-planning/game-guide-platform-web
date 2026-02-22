@@ -37,15 +37,14 @@ export async function updateGuide(
     if (err instanceof SessionRequiredError) throw err;
 
     if (err instanceof AppError) {
+      if (err.code === "UNAUTHORIZED") throw err;
       if (err.code === "NETWORK") throw new UpdateGuideError("NETWORK");
       if (err.code === "SERVER") throw new UpdateGuideError("SERVER");
-      throw new UpdateGuideError("UNKNOWN");
-    }
-
-    if (axios.isAxiosError(err)) {
+    } else if (axios.isAxiosError(err)) {
       if (err.response?.status === 400) throw new UpdateGuideError("BAD_REQUEST");
       if (err.response?.status === 404) throw new UpdateGuideError("NOT_FOUND");
     }
+
     throw new UpdateGuideError("UNKNOWN");
   }
 }

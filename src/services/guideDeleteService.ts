@@ -27,15 +27,14 @@ export async function deleteGuide(guideId: number): Promise<void> {
     if (err instanceof SessionRequiredError) throw err;
 
     if (err instanceof AppError) {
+      if (err.code === "UNAUTHORIZED") throw err;
       if (err.code === "NETWORK") throw new DeleteGuideError("NETWORK");
       if (err.code === "SERVER") throw new DeleteGuideError("SERVER");
-      throw new DeleteGuideError("UNKNOWN");
-    }
-
-    if (axios.isAxiosError(err)) {
+    } else if (axios.isAxiosError(err)) {
       if (err.response?.status === 404) throw new DeleteGuideError("NOT_FOUND");
       if (err.response?.status === 403) throw new DeleteGuideError("FORBIDDEN");
     }
+
     throw new DeleteGuideError("UNKNOWN");
   }
 }

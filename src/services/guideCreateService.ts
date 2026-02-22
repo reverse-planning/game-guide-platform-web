@@ -32,18 +32,16 @@ export async function createGuide(body: CreateGuideBody): Promise<CreateGuideRes
     // ✅ 요청 전 세션 누락은 "도메인 실패"가 아니라 "흐름 위반" → 그대로 올림
     if (err instanceof SessionRequiredError) throw err;
 
-    // 공통 분류 에러(Network/Server)
     if (err instanceof AppError) {
+      // 공통 분류 에러(Network/Server)
+      if (err.code === "UNAUTHORIZED") throw err;
       if (err.code === "NETWORK") throw new CreateGuideError("NETWORK");
       if (err.code === "SERVER") throw new CreateGuideError("SERVER");
-      // UNAUTHORIZED는 인터셉터가 이동 처리하므로 여기로 잘 안 옴
-      throw new CreateGuideError("UNKNOWN");
-    }
-
-    // 도메인 4xx
-    if (axios.isAxiosError(err)) {
+    } else if (axios.isAxiosError(err)) {
+      // 도메인 4xx
       if (err.response?.status === 400) throw new CreateGuideError("BAD_REQUEST");
     }
+
     throw new CreateGuideError("UNKNOWN");
   }
 }

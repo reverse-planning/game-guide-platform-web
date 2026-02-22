@@ -20,12 +20,10 @@ export async function getGuideDetail(guideId: number): Promise<GuideDetailDto> {
     return res.data;
   } catch (err) {
     if (err instanceof AppError) {
+      if (err.code === "UNAUTHORIZED") throw err;
       if (err.code === "NETWORK") throw new GuideDetailError("NETWORK");
       if (err.code === "SERVER") throw new GuideDetailError("SERVER");
-      throw new GuideDetailError("UNKNOWN");
-    }
-
-    if (axios.isAxiosError(err)) {
+    } else if (axios.isAxiosError(err)) {
       if (err.response?.status === 404) throw new GuideDetailError("NOT_FOUND");
     }
 
