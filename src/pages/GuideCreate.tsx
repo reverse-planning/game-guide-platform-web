@@ -2,12 +2,12 @@
 import { Link, useNavigate } from "react-router";
 import { useState } from "react";
 import { createGuide, CreateGuideError } from "@/services/guideCreateService";
-import { GAMES } from "@/mocks/data/guides";
 import { CREATE_GUIDE_ERROR_MESSAGE } from "@/constants/errorMessages";
 import { GnbShell } from "@/components/gnb/GnbShell";
 import { GnbLeft } from "@/components/gnb/GnbLeft";
 import { PageShell } from "@/components/shell/PageShell";
 import { SessionRequiredError } from "@/services/sessionResolver";
+import { GAMES } from "@/constants/games";
 
 type SubmitStatus = { type: "idle" } | { type: "submitting" } | { type: "error"; message: string };
 

@@ -1,8 +1,8 @@
 // src/mocks/handlers/guideDelete.ts
 import { http, HttpResponse } from "msw";
 import { getMockSession } from "@/mocks/state/mockSession";
-import { deleteGuideContent } from "@/mocks/state/guideContent";
 import { deleteGuideItem, findGuide } from "../state/guideDb";
+import type { GuideId } from "@/types/id";
 
 export const guideDeleteHandlers = [
   http.delete("/api/guides/:id", ({ params }) => {
@@ -11,7 +11,7 @@ export const guideDeleteHandlers = [
       return HttpResponse.json({ message: "UNAUTHORIZED" }, { status: 401 });
     }
 
-    const id = Number(params.id);
+    const id = Number(params.id) as GuideId;
     const guide = findGuide(id);
     if (!guide) {
       return HttpResponse.json({ message: "NOT_FOUND" }, { status: 404 });
@@ -26,8 +26,6 @@ export const guideDeleteHandlers = [
     if (!ok) {
       return HttpResponse.json({ message: "NOT_FOUND" }, { status: 404 });
     }
-
-    deleteGuideContent(id);
 
     return new HttpResponse(null, { status: 204 });
   }),

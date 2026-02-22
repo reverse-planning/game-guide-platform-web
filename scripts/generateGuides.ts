@@ -61,15 +61,11 @@ function pick<T>(arr: T[]): T {
 }
 
 function uniqueTitle(game: string) {
-  const t =
-    `${pick(TITLE_PARTS.prefix)} ` +
-    `${pick(TITLE_PARTS.subject)} ` +
-    `${pick(TITLE_PARTS.suffix)}`;
-
+  const t = `${pick(TITLE_PARTS.prefix)} ${pick(TITLE_PARTS.subject)} ${pick(TITLE_PARTS.suffix)}`;
   return `[${game}] ${t}`;
 }
 
-function makeContent(): string {
+function makeBody(): string {
   const count = 6 + Math.floor(rng() * 5); // 6~10문장
   return Array.from({ length: count }, () => pick(SENTENCES)).join("\n\n");
 }
@@ -77,14 +73,14 @@ function makeContent(): string {
 const guides = Array.from({ length: 120 }, (_, i) => {
   const game = pick(GAMES);
   const author = pick(AUTHORS);
-  const content = makeContent();
+  const body = makeBody();
 
   return {
     id: i + 1,
-    title: uniqueTitle(game), // ✅ 전부 다름
-    content, // ✅ 전부 다름
+    title: uniqueTitle(game),
+    body,
     game,
-    author, // ⭕ 중복 허용
+    author,
     updatedAt: new Date(Date.now() - Math.floor(rng() * 1000 * 60 * 60 * 24 * 14)).toISOString(),
   };
 });

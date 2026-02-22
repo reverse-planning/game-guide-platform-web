@@ -4,7 +4,6 @@ import GuideList from "@/pages/GuideList.tsx";
 import GuideCreate from "@/pages/GuideCreate.tsx";
 import Home from "@/pages/Home.tsx";
 import NotFound from "@/pages/NotFound.tsx";
-import ProtectedLayout from "./ProtectedLayout.tsx";
 import GuideDetail from "@/pages/GuideDetail.tsx";
 import { getSession } from "@/services/sessionService.ts";
 import axios from "axios";
@@ -47,7 +46,6 @@ export const router = createBrowserRouter([
 
   {
     path: "/guides",
-    element: <ProtectedLayout />,
     loader: requireSession,
     children: [
       { index: true, element: <GuideList /> },

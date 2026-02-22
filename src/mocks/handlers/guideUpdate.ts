@@ -1,14 +1,9 @@
 // src/mocks/handlers/guideUpdate.ts
 import { http, HttpResponse } from "msw";
 import { getMockSession } from "@/mocks/state/mockSession";
-import { getGuideContent, setGuideContent } from "@/mocks/state/guideContent";
 import { findGuide, updateGuideItem } from "../state/guideDb";
-
-type updateGuideBody = {
-  title: string;
-  game: string;
-  content: string;
-};
+import type { GuideId } from "@/types/id";
+import type { GuideDetailDto, UpdateGuideRequestDto, UpdateGuideResponseDto } from "@/types/guide";
 
 export const guideUpdateHandlers = [
   http.patch("/api/guides/:id", async ({ params, request }) => {
@@ -17,7 +12,7 @@ export const guideUpdateHandlers = [
       return HttpResponse.json({ message: "UNAUTHORIZED" }, { status: 401 });
     }
 
-    const id = Number(params.id);
+    const id = Number(params.id) as GuideId;
     const prev = findGuide(id);
     if (!prev) {
       return HttpResponse.json({ message: "NOT_FOUND" }, { status: 404 });
@@ -28,26 +23,24 @@ export const guideUpdateHandlers = [
       return HttpResponse.json({ message: "FORBIDDEN" }, { status: 403 });
     }
 
-    const { title, game, content } = (await request.json()) as updateGuideBody;
-    if (!title || !game || !content) {
+    const { title, game, body } = (await request.json()) as Partial<UpdateGuideRequestDto>;
+    if (!title || !game || !body) {
       return HttpResponse.json({ message: "BAD_REQUEST" }, { status: 400 });
     }
 
-    const updated = {
+    const next: GuideDetailDto = {
       ...prev,
-      title: title.startsWith("[") ? title : `[${game}] ${title}`,
-      game,
+      title: title.trim().startsWith("[") ? title.trim() : `[${game.trim()}] ${title.trim()}`,
+      game: game.trim(),
+      body: body.trim(),
       updatedAt: "방금",
     };
-
-    const ok = updateGuideItem(id, updated);
+    const ok = updateGuideItem(id, next);
     if (!ok) {
       return HttpResponse.json({ message: "NOT_FOUND" }, { status: 404 });
     }
 
-    // content 업데이트
-    setGuideContent(id, content ?? getGuideContent(id) ?? "");
-
-    return HttpResponse.json({ ...updated, content }, { status: 200 });
+    const response: UpdateGuideResponseDto = next;
+    return HttpResponse.json(response, { status: 200 });
   }),
 ];

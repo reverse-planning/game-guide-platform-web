@@ -1,14 +1,9 @@
 // src/mocks/handlers/guideCreate.ts
 import { http, HttpResponse } from "msw";
 import { getMockSession } from "../state/mockSession";
-import { setGuideContent } from "../state/guideContent";
 import { createGuideItem, getNextId } from "../state/guideDb";
-
-type createGuideBody = {
-  title: string;
-  game: string;
-  content: string;
-};
+import type { CreateGuideRequestDto, GuideDetailDto } from "@/types/guide";
+import type { GuideId } from "@/types/id";
 
 export const guideCreateHandlers = [
   http.post("/api/guides", async ({ request }) => {
@@ -17,24 +12,24 @@ export const guideCreateHandlers = [
       return HttpResponse.json({ message: "UNAUTHORIZED" }, { status: 401 });
     }
 
-    const { title, game, content } = (await request.json()) as createGuideBody;
-    if (!title || !game || !content) {
+    const { title, game, body } = (await request.json()) as Partial<CreateGuideRequestDto>;
+    if (!title || !game || !body) {
       return HttpResponse.json({ message: "BAD_REQUEST" }, { status: 400 });
     }
 
-    const id = getNextId();
+    const id = getNextId() as GuideId;
 
-    const item = {
-      id: id,
-      title: title.startsWith("[") ? title : `[${game}] ${title}`,
-      game,
+    const item: GuideDetailDto = {
+      id,
+      title: title.trim().startsWith("[") ? title.trim() : `[${game.trim()}] ${title.trim()}`,
+      game: game.trim(),
+      body: body.trim(),
       author: session.nickname,
       updatedAt: "방금",
     };
 
     createGuideItem(item); // ✅ 최신 글이 위로 보이게
-    setGuideContent(id, content);
 
-    return HttpResponse.json({ ...item, content }, { status: 201 });
+    return HttpResponse.json(id, { status: 201 });
   }),
 ];
