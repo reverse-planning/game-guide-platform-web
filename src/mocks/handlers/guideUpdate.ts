@@ -4,6 +4,7 @@ import { getMockSession } from "@/mocks/state/mockSession";
 import { findGuide, updateGuideItem } from "../state/guideDb";
 import type { GuideId } from "@/types/id";
 import type { GuideDetailDto, UpdateGuideRequestDto, UpdateGuideResponseDto } from "@/types/guide";
+import type { GameName } from "@/constants/games";
 
 export const guideUpdateHandlers = [
   http.patch("/api/guides/:id", async ({ params, request }) => {
@@ -31,7 +32,7 @@ export const guideUpdateHandlers = [
     const next: GuideDetailDto = {
       ...prev,
       title: title.trim().startsWith("[") ? title.trim() : `[${game.trim()}] ${title.trim()}`,
-      game: game.trim(),
+      game: game.trim() as GameName,
       body: body.trim(),
       updatedAt: "방금",
     };

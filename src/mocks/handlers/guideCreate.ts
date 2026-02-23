@@ -4,6 +4,7 @@ import { getMockSession } from "../state/mockSession";
 import { createGuideItem, getNextId } from "../state/guideDb";
 import type { CreateGuideRequestDto, GuideDetailDto } from "@/types/guide";
 import type { GuideId } from "@/types/id";
+import type { GameName } from "@/constants/games";
 
 export const guideCreateHandlers = [
   http.post("/api/guides", async ({ request }) => {
@@ -22,7 +23,7 @@ export const guideCreateHandlers = [
     const item: GuideDetailDto = {
       id,
       title: title.trim().startsWith("[") ? title.trim() : `[${game.trim()}] ${title.trim()}`,
-      game: game.trim(),
+      game: game.trim() as GameName,
       body: body.trim(),
       author: session.nickname,
       updatedAt: "방금",

@@ -1,9 +1,10 @@
 // src/validations/guide.ts
+import type { GameName } from "@/constants/games";
 import { normalizeText, isNonEmpty } from "./text";
 
 export type CreateGuideDraft = {
   title: string;
-  game: string;
+  game: GameName;
   content: string;
 };
 

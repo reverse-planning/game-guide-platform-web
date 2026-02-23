@@ -1,3 +1,4 @@
+import type { GameName } from "@/constants/games";
 import type { GuideId, UserId } from "@/types/id";
 
 /* =========================
@@ -8,7 +9,7 @@ export type GuideListItemDto = {
   id: GuideId;
   title: string;
   excerpt: string;
-  game: string;
+  game: GameName;
   author: string;
   updatedAt: string;
 };
@@ -23,7 +24,7 @@ export type GuideDetailDto = {
   id: GuideId;
   title: string;
   body: string;
-  game: string;
+  game: GameName;
   author: string;
   updatedAt: string;
 };
@@ -31,7 +32,7 @@ export type GuideDetailDto = {
 export type CreateGuideRequestDto = {
   title: string;
   body: string;
-  game: string;
+  game: GameName;
   userId: UserId;
 };
 
@@ -40,7 +41,7 @@ export type CreateGuideResponseDto = GuideId;
 export type UpdateGuideRequestDto = {
   title: string;
   body: string;
-  game: string;
+  game: GameName;
   userId: UserId;
 };
 
