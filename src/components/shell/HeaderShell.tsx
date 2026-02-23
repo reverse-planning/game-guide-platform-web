@@ -1,14 +1,14 @@
-// src/components/gnb/GnbShell.tsx
+// src/components/gnb/HeaderShell.tsx
 import type { ReactNode } from "react";
 
-type GnbShellProps = {
+type HeaderShellProps = {
   left?: ReactNode;
   center?: ReactNode;
   right?: ReactNode;
   className?: string;
 };
 
-export function GnbShell({ left, center, right, className }: GnbShellProps) {
+export function HeaderShell({ left, center, right, className }: HeaderShellProps) {
   return (
     <header className={`sticky top-0 z-10 border-b bg-white ${className ?? ""}`}>
       <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 p-4">

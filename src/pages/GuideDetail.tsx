@@ -5,7 +5,7 @@ import { getGuideDetail, GuideDetailError } from "@/services/guideDetailService"
 import { DELETE_GUIDE_ERROR_MESSAGE, GUIDE_DETAIL_ERROR_MESSAGE } from "@/constants/errorMessages";
 import { VALIDATION_MESSAGE } from "@/constants/validationMessages";
 import { deleteGuide, DeleteGuideError } from "@/services/guideDeleteService";
-import { GnbShell } from "@/components/gnb/GnbShell";
+import { HeaderShell } from "@/components/shell/HeaderShell";
 import { GnbBrand } from "@/components/gnb/GnbBrand";
 import { ActionPrimaryLink } from "@/components/actions/ActionPrimaryLink";
 import { PageShell } from "@/components/shell/PageShell";
@@ -95,7 +95,7 @@ export default function GuideDetail() {
 
   return (
     <PageShell>
-      <GnbShell
+      <HeaderShell
         left={<GnbBrand />}
         right={<ActionPrimaryLink to="/guides/new">공략 등록</ActionPrimaryLink>}
       />

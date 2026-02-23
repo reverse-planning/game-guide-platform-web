@@ -5,7 +5,7 @@ import { useSessionStore } from "@/stores/sessionSlice";
 import { createSession, CreateSessionError } from "@/services/sessionService";
 import { CREATE_SESSION_ERROR_MESSAGE } from "@/constants/errorMessages";
 import { useSessionView } from "@/stores/sessionSelectors";
-import { GnbShell } from "@/components/gnb/GnbShell";
+import { HeaderShell } from "@/components/shell/HeaderShell";
 import { GnbBrand } from "@/components/gnb/GnbBrand";
 import { GnbAuthStatus } from "@/components/gnb/GnbAuthStatus";
 
@@ -69,7 +69,7 @@ export default function Home() {
 
   return (
     <div className="min-h-dvh bg-zinc-50">
-      <GnbShell left={<GnbBrand />} right={<GnbAuthStatus isAuthed={isAuthed} />} />
+      <HeaderShell left={<GnbBrand />} right={<GnbAuthStatus isAuthed={isAuthed} />} />
 
       <main className="flex min-h-[calc(100dvh-64px)] items-center justify-center px-4">
         <form

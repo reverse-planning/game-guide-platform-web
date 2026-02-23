@@ -3,7 +3,7 @@ import { Link } from "react-router";
 import { listGuides, ListGuidesError } from "@/services/guideListService";
 import { useSessionView } from "@/stores/sessionSelectors";
 import { LIST_GUIDES_ERROR_MESSAGE } from "@/constants/errorMessages";
-import { GnbShell } from "@/components/gnb/GnbShell";
+import { HeaderShell } from "@/components/shell/HeaderShell";
 import { GnbBrand } from "@/components/gnb/GnbBrand";
 import { GnbSearch } from "@/components/gnb/GnbSearch";
 import { GnbAuthStatus } from "@/components/gnb/GnbAuthStatus";
@@ -101,7 +101,7 @@ export default function GuideList() {
 
   return (
     <PageShell>
-      <GnbShell
+      <HeaderShell
         left={<GnbBrand />}
         center={
           <GnbSearch value={query} onChange={setQuery} placeholder="공략 검색 (제목/본문/게임)" />

@@ -5,7 +5,7 @@ import { getGuideDetail } from "@/services/guideDetailService";
 import { updateGuide, UpdateGuideError } from "@/services/guideUpdateService";
 import { UPDATE_GUIDE_ERROR_MESSAGE } from "@/constants/errorMessages";
 import { VALIDATION_MESSAGE } from "@/constants/validationMessages";
-import { GnbShell } from "@/components/gnb/GnbShell";
+import { HeaderShell } from "@/components/shell/HeaderShell";
 import { GnbBrand } from "@/components/gnb/GnbBrand";
 import { PageShell } from "@/components/shell/PageShell";
 import { SessionRequiredError } from "@/services/sessionResolver";
@@ -132,7 +132,7 @@ export default function GuideEdit() {
 
   return (
     <PageShell>
-      <GnbShell
+      <HeaderShell
         left={<GnbBrand />}
         right={
           <div className="flex items-center gap-2">
