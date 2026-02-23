@@ -1,18 +1,23 @@
 // src/pages/GuideCreate.tsx
-import { Link, useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import { useState } from "react";
 import { createGuide, CreateGuideError } from "@/services/guideCreateService";
 import { CREATE_GUIDE_ERROR_MESSAGE } from "@/constants/errorMessages";
 import { GnbShell } from "@/components/gnb/GnbShell";
-import { GnbLeft } from "@/components/gnb/GnbLeft";
+import { GnbBrand } from "@/components/gnb/GnbBrand";
 import { PageShell } from "@/components/shell/PageShell";
 import { SessionRequiredError } from "@/services/sessionResolver";
-import { GAMES } from "@/constants/games";
+import { GAMES, type GameName } from "@/constants/games";
+import { ActionSecondaryLink } from "@/components/actions/ActionSecondaryLink";
+import { ActionPrimaryButton } from "@/components/actions/ActionPrimaryButton";
 
 type SubmitStatus = { type: "idle" } | { type: "submitting" } | { type: "error"; message: string };
 
+const GUIDE_CREATE_FORM_ID = "guide-create-form";
+
 export default function GuideCreate() {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [status, setStatus] = useState<SubmitStatus>({ type: "idle" });
 
@@ -25,7 +30,7 @@ export default function GuideCreate() {
 
     const fd = new FormData(e.currentTarget);
     const title = String(fd.get("title") ?? "").trim();
-    const game = String(fd.get("game") ?? "").trim();
+    const game = String(fd.get("game") ?? "").trim() as GameName;
     const body = String(fd.get("body") ?? "").trim();
 
     if (!title || !game || !body) {
@@ -59,14 +64,26 @@ export default function GuideCreate() {
 
   return (
     <PageShell>
-      <GnbShell left={<GnbLeft />} right={<div className="text-sm text-zinc-600">공략 등록</div>} />
+      <GnbShell
+        left={<GnbBrand />}
+        right={
+          <div className="flex items-center gap-2">
+            <ActionSecondaryLink to="/guides" disabled={isSubmitting}>
+              취소
+            </ActionSecondaryLink>
+            <ActionPrimaryButton type="submit" form={GUIDE_CREATE_FORM_ID} loading={isSubmitting}>
+              공략 등록
+            </ActionPrimaryButton>
+          </div>
+        }
+      />
 
       <main className="mx-auto max-w-3xl p-4">
         <div className="rounded-xl border bg-white p-6 shadow-sm">
           <h1 className="text-xl font-semibold">공략 등록</h1>
           <p className="mt-1 text-sm text-zinc-600">제목/게임/요약/본문을 입력하세요.</p>
 
-          <form onSubmit={onSubmit} className="mt-6 space-y-4">
+          <form id={GUIDE_CREATE_FORM_ID} onSubmit={onSubmit} className="mt-6 space-y-4">
             <div>
               <label className="mb-1 block text-sm font-medium">제목</label>
               <input
@@ -103,22 +120,6 @@ export default function GuideCreate() {
             </div>
 
             {errorMessage && <p className="text-sm text-red-600">{errorMessage}</p>}
-
-            <div className="flex items-center justify-end gap-2 pt-2">
-              <Link
-                to="/guides"
-                className="rounded-md border px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-50"
-              >
-                취소
-              </Link>
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-50"
-              >
-                {isSubmitting ? "등록 중..." : "등록하기"}
-              </button>
-            </div>
           </form>
         </div>
       </main>

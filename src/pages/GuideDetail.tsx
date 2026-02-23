@@ -1,16 +1,18 @@
 // src/pages/GuideDetail.tsx
-import { Link, useNavigate, useParams } from "react-router";
+import { Link, useLocation, useNavigate, useParams } from "react-router";
 import { useEffect, useMemo, useState } from "react";
 import { getGuideDetail, GuideDetailError } from "@/services/guideDetailService";
 import { DELETE_GUIDE_ERROR_MESSAGE, GUIDE_DETAIL_ERROR_MESSAGE } from "@/constants/errorMessages";
 import { VALIDATION_MESSAGE } from "@/constants/validationMessages";
 import { deleteGuide, DeleteGuideError } from "@/services/guideDeleteService";
 import { GnbShell } from "@/components/gnb/GnbShell";
-import { GnbLeft } from "@/components/gnb/GnbLeft";
-import { GnbCtaLink } from "@/components/gnb/GnbCtaLink";
+import { GnbBrand } from "@/components/gnb/GnbBrand";
+import { ActionPrimaryLink } from "@/components/actions/ActionPrimaryLink";
 import { PageShell } from "@/components/shell/PageShell";
 import type { GuideDetail as GuideDetailType } from "@/types/guide";
 import { SessionRequiredError } from "@/services/sessionResolver";
+import { ActionSecondaryLink } from "@/components/actions/ActionSecondaryLink";
+import { ActionDangerButton } from "@/components/actions/ActionDangerButton";
 
 type LoadState =
   | { type: "idle" }
@@ -20,6 +22,8 @@ type LoadState =
 
 export default function GuideDetail() {
   const navigate = useNavigate();
+  const location = useLocation();
+
   const { guideId } = useParams();
 
   const id = useMemo(() => Number(guideId), [guideId]);
@@ -91,7 +95,10 @@ export default function GuideDetail() {
 
   return (
     <PageShell>
-      <GnbShell left={<GnbLeft />} right={<GnbCtaLink to="/guides/new">공략 등록</GnbCtaLink>} />
+      <GnbShell
+        left={<GnbBrand />}
+        right={<ActionPrimaryLink to="/guides/new">공략 등록</ActionPrimaryLink>}
+      />
 
       <main className="mx-auto max-w-3xl p-4">
         {state.type !== "success" ? (
@@ -119,24 +126,16 @@ export default function GuideDetail() {
             )}
 
             <div className="mt-6 flex items-center justify-between gap-2">
-              <Link to="/guides" className="text-sm text-zinc-700 hover:underline">
+              <Link
+                to="/guides"
+                className="text-sm text-zinc-700 hover:text-zinc-900 hover:underline"
+              >
                 목록으로
               </Link>
 
               <div className="flex justify-end gap-2">
-                <Link
-                  to={`/guides/${id}/edit`}
-                  className="rounded-md border px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-50"
-                >
-                  수정
-                </Link>
-                <button
-                  type="button"
-                  onClick={onDelete}
-                  className="rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-500"
-                >
-                  삭제
-                </button>
+                <ActionSecondaryLink to={`/guides/${id}/edit`}>수정</ActionSecondaryLink>
+                <ActionDangerButton onClick={onDelete}>삭제</ActionDangerButton>
               </div>
             </div>
           </article>

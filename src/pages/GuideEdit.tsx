@@ -1,18 +1,21 @@
 // src/pages/GuideEdit.tsx
-import { Link, useLocation, useNavigate, useParams } from "react-router";
+import { useLocation, useNavigate, useParams } from "react-router";
 import { useEffect, useMemo, useState } from "react";
 import { getGuideDetail } from "@/services/guideDetailService";
 import { updateGuide, UpdateGuideError } from "@/services/guideUpdateService";
 import { UPDATE_GUIDE_ERROR_MESSAGE } from "@/constants/errorMessages";
 import { VALIDATION_MESSAGE } from "@/constants/validationMessages";
 import { GnbShell } from "@/components/gnb/GnbShell";
-import { GnbLeft } from "@/components/gnb/GnbLeft";
+import { GnbBrand } from "@/components/gnb/GnbBrand";
 import { PageShell } from "@/components/shell/PageShell";
 import { SessionRequiredError } from "@/services/sessionResolver";
+import { ActionSecondaryLink } from "@/components/actions/ActionSecondaryLink";
+import { ActionPrimaryButton } from "@/components/actions/ActionPrimaryButton";
+import { GAMES, type GameName } from "@/constants/games";
 
 type FormState = {
   title: string;
-  game: string;
+  game: GameName;
   body: string;
 };
 
@@ -21,6 +24,8 @@ type PageState =
   | { type: "ready"; form: FormState }
   | { type: "saving"; form: FormState }
   | { type: "error"; message: string };
+
+const GUIDE_EDIT_FORM_ID = "guide-edit-form";
 
 export default function GuideEdit() {
   const navigate = useNavigate();
@@ -73,7 +78,7 @@ export default function GuideEdit() {
 
     const fd = new FormData(e.currentTarget);
     const title = String(fd.get("title") ?? "").trim();
-    const game = String(fd.get("game") ?? "").trim();
+    const game = String(fd.get("game") ?? "").trim() as GameName;
     const body = String(fd.get("body") ?? "").trim();
 
     if (!title || !game || !body) {
@@ -127,7 +132,17 @@ export default function GuideEdit() {
 
   return (
     <PageShell>
-      <GnbShell left={<GnbLeft />} right={<div className="text-sm text-zinc-600">공략 수정</div>} />
+      <GnbShell
+        left={<GnbBrand />}
+        right={
+          <div className="flex items-center gap-2">
+            <ActionSecondaryLink to={`/guides/${id}`}>취소</ActionSecondaryLink>
+            <ActionPrimaryButton type="submit" form={GUIDE_EDIT_FORM_ID} loading={isSaving}>
+              저장
+            </ActionPrimaryButton>
+          </div>
+        }
+      />
 
       <main className="mx-auto max-w-3xl p-4">
         <div className="rounded-xl border bg-white p-6 shadow-sm">
@@ -138,7 +153,7 @@ export default function GuideEdit() {
             <div className="mt-4 rounded-lg border p-3 text-sm text-red-600">{banner}</div>
           )}
 
-          <form onSubmit={onSubmit} className="mt-6 space-y-4">
+          <form id={GUIDE_EDIT_FORM_ID} onSubmit={onSubmit} className="mt-6 space-y-4">
             <div>
               <label className="mb-1 block text-sm font-medium">제목</label>
               <input
@@ -151,13 +166,17 @@ export default function GuideEdit() {
 
             <div>
               <label className="mb-1 block text-sm font-medium">게임</label>
-              <input
+              <select
                 name="game"
-                type="text"
                 defaultValue={form.game}
                 className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-zinc-900"
-              />
-              {/* 지금은 GAMES select를 그대로 가져와도 됨. 서버 스펙 따라 선택 */}
+              >
+                {GAMES.map((g) => (
+                  <option key={g} value={g}>
+                    {g}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div>
@@ -168,22 +187,6 @@ export default function GuideEdit() {
                 defaultValue={form.body}
                 className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-zinc-900"
               />
-            </div>
-
-            <div className="flex items-center justify-end gap-2 pt-2">
-              <Link
-                to={`/guides/${id}`}
-                className="rounded-md border px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-50"
-              >
-                취소
-              </Link>
-              <button
-                type="submit"
-                disabled={isSaving}
-                className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-50"
-              >
-                {isSaving ? "저장 중..." : "저장하기"}
-              </button>
             </div>
           </form>
         </div>
