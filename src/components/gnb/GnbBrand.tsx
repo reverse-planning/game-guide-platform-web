@@ -1,7 +1,7 @@
-// src/components/gnb/GnbLeft.tsx
+// src/components/gnb/GnbBrand.tsx
 import { Link } from "react-router";
 
-export function GnbLeft() {
+export function GnbBrand() {
   return (
     <>
       <Link to="/guides" className="text-lg font-semibold">

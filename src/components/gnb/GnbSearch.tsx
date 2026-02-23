@@ -1,12 +1,12 @@
 // src/components/gnb/GnbSearch.tsx
-type Props = {
+type GnbSearchProps = {
   value: string;
   onChange: (v: string) => void;
   onClear?: () => void;
   placeholder?: string;
 };
 
-export function GnbSearch({ value, onChange, onClear, placeholder = "검색" }: Props) {
+export function GnbSearch({ value, onChange, onClear, placeholder = "검색" }: GnbSearchProps) {
   return (
     <div className="relative w-full">
       <input

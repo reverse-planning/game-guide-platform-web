@@ -6,7 +6,7 @@ import { createSession, CreateSessionError } from "@/services/sessionService";
 import { CREATE_SESSION_ERROR_MESSAGE } from "@/constants/errorMessages";
 import { useSessionView } from "@/stores/sessionSelectors";
 import { GnbShell } from "@/components/gnb/GnbShell";
-import { GnbLeft } from "@/components/gnb/GnbLeft";
+import { GnbBrand } from "@/components/gnb/GnbBrand";
 import { GnbAuthStatus } from "@/components/gnb/GnbAuthStatus";
 
 type SubmitStatus = { type: "idle" } | { type: "submitting" } | { type: "error"; message: string };
@@ -69,7 +69,7 @@ export default function Home() {
 
   return (
     <div className="min-h-dvh bg-zinc-50">
-      <GnbShell left={<GnbLeft />} right={<GnbAuthStatus isAuthed={isAuthed} />} />
+      <GnbShell left={<GnbBrand />} right={<GnbAuthStatus isAuthed={isAuthed} />} />
 
       <main className="flex min-h-[calc(100dvh-64px)] items-center justify-center px-4">
         <form
