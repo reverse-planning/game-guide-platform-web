@@ -3,6 +3,10 @@
     {
       "source": "/api/:path*",
       "destination": "https://api.doi2.my/api/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/"
     }
   ]
 }
