@@ -2,50 +2,39 @@
 
 역기획 프로젝트
 
-## 문제 상황
+## 📌개발 이슈
 
-### critical 이슈
+- [Auth Routing 404 이슈](./docs/dev-issue/auth-routing-404.md)
 
-- 무한 next반복 redirect.
-- 순간적으로 Vercel Notfound 페이지 뜸.
+## 🧭 고민한 부분
+
+- [Welcome 페이지 상태 관리 전략](./docs/decisions/welcome-page-state-vs-storage.md)
+
+---
 
 ### known 이슈
 
 - 검색 키워드 자모음 합쳐져야 인식됨.
 
-## 고민된 부분
+TODO
 
-### 1. welcome 페이지 관리
+- msw 수정
+- 에러 관리 공부 (/docs/\_notes에 정리)
 
-    별도 페이지로 분리하는 기준
-    - 딥링크/공유/북마크 가치가 있는 경우
-    - 뒤로가기 히스토리가 필요한 경우
+### 01. Policies
 
-=> 뒤로가기 히스토리가 필요 없기에, 별도 페이지 분리 하지 않음. one-shot UI처리
+세션은 클라이언트 store만 신뢰
 
-#### 대안
+새로고침하면 store 초기화 → 미인증으로 판단
 
-**State**
+```
+보호 라우트 진입 전 가드
+- store에 이미 세션이 있으면 그대로 통과
+- 실패하면 redirect
+```
 
-딱 이번 이동에만 필요한 신호
-
-1. location.state: “방금 발생한 이벤트”(로그인 직후, 생성 직후, 저장 직후)
-   장: url오염 없음.
-   단: 뒤로가기 시 state가 남을 수 있음.
-1. 메모리 (전역 store) 플래그: location.state와 storage 사이 중간
-   장: 라우팅 이동과 무관하게 사용 가능.
-
-**Storage**
-
-새로고침/브라우저 재시작/재방문에도 유지되어야 하는 경우 사용.
-
-1. SessionStorage: 브라우저 탭 생명주기 동안 1회
-1. LocalStorage: 디바이스 단위 영구 1회
+=> [추후 쿠키 or 토큰 방식 적용] store 없으면 서버에서 세션 복구 시도 (GET /api/session)
 
 ---
 
-TODO
-
-- 세션 서버 관리
-- msw 수정
-- 에러 관리 공부
+관측/에러수집(Sentry) → 핵심 사용자 시나리오 테스트(Playwright 중심) → MSW는 ‘테스트용 최소 시나리오’만 유지
