@@ -1,5 +1,5 @@
 // src/pages/GuideCreate.tsx
-import { useLocation, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
 import { useState } from "react";
 import { createGuide, CreateGuideError } from "@/services/guideCreateService";
 import { CREATE_GUIDE_ERROR_MESSAGE } from "@/constants/errorMessages";
@@ -10,6 +10,7 @@ import { SessionRequiredError } from "@/services/sessionResolver";
 import { GAMES, type GameName } from "@/constants/games";
 import { ActionSecondaryLink } from "@/components/actions/ActionSecondaryLink";
 import { ActionPrimaryButton } from "@/components/actions/ActionPrimaryButton";
+import { buildLoginUrl } from "@/routes/utils/buildLoginUrl";
 
 type SubmitStatus = { type: "idle" } | { type: "submitting" } | { type: "error"; message: string };
 
@@ -17,7 +18,6 @@ const GUIDE_CREATE_FORM_ID = "guide-create-form";
 
 export default function GuideCreate() {
   const navigate = useNavigate();
-  const location = useLocation();
 
   const [status, setStatus] = useState<SubmitStatus>({ type: "idle" });
 
@@ -46,8 +46,7 @@ export default function GuideCreate() {
     } catch (err) {
       // ✅ 세션 누락: 홈으로 보내고 next로 복귀 가능하게
       if (err instanceof SessionRequiredError) {
-        const next = location.pathname + location.search;
-        navigate(`/?next=${encodeURIComponent(next)}`, { replace: true });
+        navigate(buildLoginUrl(window.location.href), { replace: true });
         return;
       }
 

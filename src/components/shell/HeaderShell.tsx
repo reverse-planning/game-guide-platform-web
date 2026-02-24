@@ -1,4 +1,4 @@
-// src/components/gnb/HeaderShell.tsx
+// src/components/shell/HeaderShell.tsx
 import type { ReactNode } from "react";
 
 type HeaderShellProps = {

@@ -1,5 +1,5 @@
 // src/pages/GuideDetail.tsx
-import { Link, useLocation, useNavigate, useParams } from "react-router";
+import { Link, useNavigate, useParams } from "react-router";
 import { useEffect, useMemo, useState } from "react";
 import { getGuideDetail, GuideDetailError } from "@/services/guideDetailService";
 import { DELETE_GUIDE_ERROR_MESSAGE, GUIDE_DETAIL_ERROR_MESSAGE } from "@/constants/errorMessages";
@@ -13,6 +13,7 @@ import type { GuideDetail as GuideDetailType } from "@/types/guide";
 import { SessionRequiredError } from "@/services/sessionResolver";
 import { ActionSecondaryLink } from "@/components/actions/ActionSecondaryLink";
 import { ActionDangerButton } from "@/components/actions/ActionDangerButton";
+import { buildLoginUrl } from "@/routes/utils/buildLoginUrl";
 
 type LoadState =
   | { type: "idle" }
@@ -22,7 +23,6 @@ type LoadState =
 
 export default function GuideDetail() {
   const navigate = useNavigate();
-  const location = useLocation();
 
   const { guideId } = useParams();
 
@@ -74,8 +74,7 @@ export default function GuideDetail() {
     } catch (err) {
       // ✅ 세션 누락: 홈으로 보내고 next로 복귀 가능하게
       if (err instanceof SessionRequiredError) {
-        const next = location.pathname + location.search;
-        navigate(`/?next=${encodeURIComponent(next)}`, { replace: true });
+        navigate(buildLoginUrl(window.location.href), { replace: true });
         return;
       }
 

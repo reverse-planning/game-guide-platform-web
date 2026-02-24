@@ -1,5 +1,5 @@
 // src/pages/GuideEdit.tsx
-import { useLocation, useNavigate, useParams } from "react-router";
+import { useNavigate, useParams } from "react-router";
 import { useEffect, useMemo, useState } from "react";
 import { getGuideDetail } from "@/services/guideDetailService";
 import { updateGuide, UpdateGuideError } from "@/services/guideUpdateService";
@@ -12,6 +12,7 @@ import { SessionRequiredError } from "@/services/sessionResolver";
 import { ActionSecondaryLink } from "@/components/actions/ActionSecondaryLink";
 import { ActionPrimaryButton } from "@/components/actions/ActionPrimaryButton";
 import { GAMES, type GameName } from "@/constants/games";
+import { buildLoginUrl } from "@/routes/utils/buildLoginUrl";
 
 type FormState = {
   title: string;
@@ -29,7 +30,6 @@ const GUIDE_EDIT_FORM_ID = "guide-edit-form";
 
 export default function GuideEdit() {
   const navigate = useNavigate();
-  const location = useLocation();
 
   const { guideId } = useParams();
   const id = useMemo(() => Number(guideId), [guideId]);
@@ -94,8 +94,7 @@ export default function GuideEdit() {
     } catch (err) {
       // ✅ 세션 누락: 홈으로 보내고 next로 복귀 가능하게
       if (err instanceof SessionRequiredError) {
-        const next = location.pathname + location.search;
-        navigate(`/?next=${encodeURIComponent(next)}`, { replace: true });
+        navigate(buildLoginUrl(window.location.href), { replace: true });
         return;
       }
       if (err instanceof UpdateGuideError) {
