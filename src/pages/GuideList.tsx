@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { listGuides, ListGuidesError } from "@/services/guideListService";
 import { useSessionView } from "@/stores/sessionSelectors";
 import { LIST_GUIDES_ERROR_MESSAGE } from "@/constants/errorMessages";
@@ -12,6 +12,8 @@ import type { GuideListItem } from "@/types/guide";
 import { ActionPrimaryLink } from "@/components/actions/ActionPrimaryLink";
 
 export default function GuideList() {
+  const navigate = useNavigate();
+
   const { isAuthed, sessionNickname } = useSessionView();
 
   const [query, setQuery] = useState("");
@@ -99,6 +101,14 @@ export default function GuideList() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, query, isFetching, hasNext]);
 
+  const onCardClick = (id: number) => {
+    // 드래그로 텍스트 선택 중이면 이동 금지
+    const sel = window.getSelection?.();
+    if (sel && sel.type === "Range") return;
+
+    navigate(`/guides/${id}`);
+  };
+
   return (
     <PageShell>
       <HeaderShell
@@ -131,31 +141,30 @@ export default function GuideList() {
           {items.map((it) => (
             <article
               key={it.id}
-              className="group relative rounded-xl border bg-white p-4 shadow-sm transition hover:bg-zinc-50"
+              role="link"
+              tabIndex={0}
+              onClick={() => onCardClick(it.id)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") onCardClick(it.id);
+              }}
+              className="group relative cursor-pointer rounded-xl border bg-white p-4 shadow-sm transition hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
             >
-              {/* 카드 전체 클릭용 overlay */}
-              <Link
-                to={`/guides/${it.id}`}
-                aria-label={`${it.title} 상세로 이동`}
-                className="absolute inset-0 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
-              />
+              {/* 접근성/SEO용 “진짜 링크”는 제목에만 둬도 충분 */}
+              <h2 className="line-clamp-1 font-semibold text-zinc-900">
+                <Link
+                  to={`/guides/${it.id}`}
+                  onClick={(e) => e.stopPropagation()} // 중복 네비게이션 방지
+                  className="focus:outline-none"
+                >
+                  {it.title}
+                </Link>
+              </h2>
 
-              <div className="relative flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <h2 className="line-clamp-1 font-semibold text-zinc-900">{it.title}</h2>
-                  <div className="mt-1 text-xs text-zinc-500">
-                    {it.game} · {it.author}
-                  </div>
-                </div>
-                <span className="shrink-0 text-xs text-zinc-500">{it.updatedAt}</span>
+              <div className="mt-1 text-xs text-zinc-500">
+                {it.game} · {it.author}
               </div>
 
-              <p className="relative mt-3 line-clamp-3 text-sm text-zinc-700">{it.excerpt}</p>
-
-              <div className="relative mt-4 flex items-center justify-between text-xs text-zinc-500">
-                <span>조회 1.2k</span>
-                <span>수정: {it.updatedAt}</span>
-              </div>
+              <p className="mt-3 line-clamp-3 text-sm text-zinc-700">{it.excerpt}</p>
             </article>
           ))}
         </div>
