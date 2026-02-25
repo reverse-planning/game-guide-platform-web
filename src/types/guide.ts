@@ -12,6 +12,7 @@ export type GuideListItemDto = {
   game: GameName;
   author: string;
   updatedAt: string;
+  views?: number;
 };
 
 export type GuideListResponseDto = {
@@ -27,6 +28,7 @@ export type GuideDetailDto = {
   game: GameName;
   author: string;
   updatedAt: string;
+  views?: number;
 };
 
 export type CreateGuideRequestDto = {
@@ -58,11 +60,14 @@ export type DeleteGuideResponseDto = void;
  * Guide - Query
  * ========================= */
 
+// 서버 스펙: sort: ["id","desc"] 형태
+export type GuideListSort = "id,desc" | "id,asc" | "views,desc" | "views,asc";
+
 export type GuideListQuery = {
   query?: string;
   page: number;
-  size?: number;
-  sort?: string[];
+  size: number;
+  sort: GuideListSort;
 };
 
 /* =========================

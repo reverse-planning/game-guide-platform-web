@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { listGuides, ListGuidesError } from "@/services/guideListService";
 import { useSessionView } from "@/stores/sessionSelectors";
@@ -8,8 +8,14 @@ import { GnbBrand } from "@/components/gnb/GnbBrand";
 import { GnbSearch } from "@/components/gnb/GnbSearch";
 import { GnbAuthStatus } from "@/components/gnb/GnbAuthStatus";
 import { PageShell } from "@/components/shell/PageShell";
-import type { GuideListItem } from "@/types/guide";
+import type { GuideListItem, GuideListSort } from "@/types/guide";
 import { ActionPrimaryLink } from "@/components/actions/ActionPrimaryLink";
+import { GAMES, type GameName } from "@/constants/games";
+
+const SORT_OPTIONS: Array<{ label: string; value: GuideListSort }> = [
+  { label: "최신순", value: "id,desc" }, // 최신 = id desc (서버 스펙)
+  { label: "조회순", value: "views,desc" },
+];
 
 export default function GuideList() {
   const navigate = useNavigate();
@@ -17,6 +23,9 @@ export default function GuideList() {
   const { isAuthed, sessionNickname } = useSessionView();
 
   const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<GuideListSort>("id,desc");
+  const [game, setGame] = useState<GameName | "ALL">("ALL");
+
   const [items, setItems] = useState<GuideListItem[]>([]);
   const [page, setPage] = useState(0);
   const [isFetching, setIsFetching] = useState(false);
@@ -25,14 +34,43 @@ export default function GuideList() {
 
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
-  // ✅ 검색어 변경 시: 서버에서 0페이지부터 다시 로드
+  // IntersectionObserver에서 최신 상태를 안정적으로 참조하기 위한 ref
+  const pageRef = useRef(page);
+  const fetchingRef = useRef(isFetching);
+  const hasNextRef = useRef(hasNext);
+  const queryRef = useRef(query);
+  const sortRef = useRef<GuideListSort>(sort);
+  useEffect(() => {
+    pageRef.current = page;
+  }, [page]);
+  useEffect(() => {
+    fetchingRef.current = isFetching;
+  }, [isFetching]);
+  useEffect(() => {
+    hasNextRef.current = hasNext;
+  }, [hasNext]);
+  useEffect(() => {
+    queryRef.current = query;
+    sortRef.current = sort;
+  }, [query, sort]);
+
+  // ✅ 서버에서 받아온 items에 대해 "프론트 게임 필터" 적용
+  const filteredItems = useMemo(() => {
+    if (game === "ALL") return items;
+    return items.filter((it) => it.game === game);
+  }, [items, game]);
+
+  // ✅ 검색어/정렬 변경 시: 서버에서 0페이지부터 다시 로드
+  // (게임 필터는 프론트 가공이므로 서버 재요청 트리거에 포함하지 않음)
   useEffect(() => {
     let ignore = false;
 
     async function init() {
+      setErrorBanner(null);
       setIsFetching(true);
+
       try {
-        const data = await listGuides({ query, page: 0, size: 20 });
+        const data = await listGuides({ query, page: 0, size: 20, sort });
         if (ignore) return;
 
         setItems(data.items);
@@ -58,15 +96,22 @@ export default function GuideList() {
     return () => {
       ignore = true;
     };
-  }, [query]);
+  }, [query, sort]);
 
-  const loadMore = async () => {
-    if (isFetching || !hasNext) return;
+  const loadMore = useCallback(async () => {
+    if (fetchingRef.current || !hasNextRef.current) return;
 
+    setErrorBanner(null);
     setIsFetching(true);
     try {
-      const nextPage = page + 1;
-      const data = await listGuides({ query, page: nextPage, size: 20 });
+      const nextPage = pageRef.current + 1;
+
+      const data = await listGuides({
+        query: queryRef.current,
+        page: nextPage,
+        size: 20,
+        sort: sortRef.current,
+      });
 
       // 다음 페이지가 null이면 마지막
       setHasNext(data.nextPage !== null);
@@ -81,7 +126,7 @@ export default function GuideList() {
     } finally {
       setIsFetching(false);
     }
-  };
+  }, []);
 
   // ✅ 무한 스크롤: IntersectionObserver (관찰만, 데이터는 service가 담당)
   useEffect(() => {
@@ -98,8 +143,7 @@ export default function GuideList() {
 
     io.observe(el);
     return () => io.disconnect();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, query, isFetching, hasNext]);
+  }, [loadMore]);
 
   const onCardClick = (id: number) => {
     // 드래그로 텍스트 선택 중이면 이동 금지
@@ -108,6 +152,8 @@ export default function GuideList() {
 
     navigate(`/guides/${id}`);
   };
+
+  const sortValueKey = useMemo(() => JSON.stringify(sort), [sort]);
 
   return (
     <PageShell>
@@ -126,19 +172,50 @@ export default function GuideList() {
           </div>
         )}
 
-        {/* 상단 띠: 정렬/필터 + 글쓰기 버튼 */}
-        <div className="mb-4 flex items-center justify-between rounded-xl border bg-white p-3">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium">정렬/필터</span>
-            <span className="text-xs text-zinc-500">(MVP: UI만 준비, 기능은 이후 티켓)</span>
-          </div>
+        {/* ✅ Sticky 상단 띠: 정렬/필터 + 글쓰기 버튼 */}
+        {/* HeaderShell이 fixed/sticky 라면 top 값을 높이에 맞게 조정 (예: top-16) */}
+        <div className="sticky top-16 z-10 mb-4 rounded-xl border bg-white/95 p-3 backdrop-blur">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-wrap items-center gap-2">
+              {/* 정렬 */}
+              <label className="text-sm font-medium text-zinc-800">정렬</label>
+              <select
+                value={sortValueKey}
+                onChange={(e) => setSort(JSON.parse(e.target.value) as GuideListSort)}
+                className="h-9 rounded-lg border px-3 text-sm"
+              >
+                {SORT_OPTIONS.map((opt) => (
+                  <option key={opt.label} value={JSON.stringify(opt.value)}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
 
-          <ActionPrimaryLink to="/guides/new">공략 등록</ActionPrimaryLink>
+              {/* 게임 필터(프론트 가공) */}
+              <label className="ml-2 text-sm font-medium text-zinc-800">게임</label>
+              <select
+                value={game}
+                onChange={(e) => setGame(e.target.value as GameName | "ALL")}
+                className="h-9 rounded-lg border px-3 text-sm"
+              >
+                <option value="ALL">전체</option>
+                {GAMES.map((g) => (
+                  <option key={g} value={g}>
+                    {g}
+                  </option>
+                ))}
+              </select>
+
+              <span className="text-xs text-zinc-500">(정렬: 서버, 게임: 프론트 필터)</span>
+            </div>
+
+            <ActionPrimaryLink to="/guides/new">공략 등록</ActionPrimaryLink>
+          </div>
         </div>
 
         {/* 카드 그리드 (3열 기준) */}
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {items.map((it) => (
+          {filteredItems.map((it) => (
             <article
               key={it.id}
               role="link"
@@ -164,7 +241,7 @@ export default function GuideList() {
                 {it.game} · {it.author}
               </div>
 
-              <p className="mt-3 line-clamp-3 text-sm text-zinc-700">{it.excerpt}</p>
+              <p className="mt-3 truncate text-sm text-zinc-700">{it.excerpt}</p>
             </article>
           ))}
         </div>
