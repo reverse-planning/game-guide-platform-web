@@ -1,10 +1,9 @@
 // src/pages/GuideEdit.tsx
 import { useNavigate, useParams } from "react-router";
 import { useEffect, useMemo, useState } from "react";
-import { getGuideDetail } from "@/services/guideDetailService";
+import { getGuideDetail, GuideDetailError } from "@/services/guideDetailService";
 import { updateGuide, UpdateGuideError } from "@/services/guideUpdateService";
-import { UPDATE_GUIDE_ERROR_MESSAGE } from "@/constants/errorMessages";
-import { VALIDATION_MESSAGE } from "@/constants/validationMessages";
+import { GUIDE_DETAIL_ERROR_MESSAGE, UPDATE_GUIDE_ERROR_MESSAGE } from "@/constants/errorMessages";
 import { HeaderShell } from "@/components/shell/HeaderShell";
 import { GnbBrand } from "@/components/gnb/GnbBrand";
 import { PageShell } from "@/components/shell/PageShell";
@@ -13,8 +12,10 @@ import { ActionSecondaryLink } from "@/components/actions/ActionSecondaryLink";
 import { ActionPrimaryButton } from "@/components/actions/ActionPrimaryButton";
 import { GAMES, type GameName } from "@/constants/games";
 import { buildLoginUrl } from "@/routes/utils/buildLoginUrl";
+import { UI_MESSAGE } from "@/constants/uiMessages";
+import { ROUTE_MESSAGE } from "@/constants/routeMessages";
 
-type FormState = {
+export type FormState = {
   title: string;
   game: GameName;
   body: string;
@@ -42,7 +43,7 @@ export default function GuideEdit() {
 
     async function run() {
       if (!Number.isInteger(id) || id <= 0) {
-        setState({ type: "error", message: VALIDATION_MESSAGE.INVALID_GUIDE_ID });
+        setState({ type: "error", message: ROUTE_MESSAGE.INVALID_GUIDE_ID });
         return;
       }
 
@@ -58,9 +59,19 @@ export default function GuideEdit() {
             body: data.body,
           },
         });
-      } catch {
+      } catch (err) {
         if (ignore) return;
-        setState({ type: "error", message: "수정 화면을 불러오지 못했습니다." });
+
+        // ✅ 세션 누락: 홈으로 보내고 next로 복귀 가능하게
+        if (err instanceof SessionRequiredError) {
+          navigate(buildLoginUrl(window.location.href), { replace: true });
+          return;
+        }
+        if (err instanceof GuideDetailError) {
+          setState({ type: "error", message: GUIDE_DETAIL_ERROR_MESSAGE[err.code] });
+        } else {
+          setState({ type: "error", message: GUIDE_DETAIL_ERROR_MESSAGE.UNKNOWN });
+        }
       }
     }
 
@@ -68,7 +79,7 @@ export default function GuideEdit() {
     return () => {
       ignore = true;
     };
-  }, [id]);
+  }, [id, navigate]);
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -82,7 +93,7 @@ export default function GuideEdit() {
     const body = String(fd.get("body") ?? "").trim();
 
     if (!title || !game || !body) {
-      setBanner("모든 입력값은 필수입니다.");
+      setBanner(UI_MESSAGE.REQUIRED_FIELDS);
       return;
     }
 
@@ -110,7 +121,7 @@ export default function GuideEdit() {
     return (
       <div className="min-h-dvh bg-zinc-50 p-4">
         <div className="mx-auto max-w-3xl rounded-xl border bg-white p-6 shadow-sm text-sm">
-          불러오는 중...
+          {UI_MESSAGE.FETCHING}
         </div>
       </div>
     );

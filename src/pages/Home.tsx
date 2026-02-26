@@ -9,6 +9,7 @@ import { HeaderShell } from "@/components/shell/HeaderShell";
 import { GnbBrand } from "@/components/gnb/GnbBrand";
 import { GnbAuthStatus } from "@/components/gnb/GnbAuthStatus";
 import { getSafeNext } from "@/routes/utils/safeNext";
+import { UI_MESSAGE } from "@/constants/uiMessages";
 
 type SubmitStatus = { type: "idle" } | { type: "submitting" } | { type: "error"; message: string };
 
@@ -92,7 +93,7 @@ export default function Home() {
             disabled={isSubmitting}
             className="mt-4 w-full rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-50"
           >
-            {isSubmitting ? "처리 중..." : "시작하기"}
+            {isSubmitting ? UI_MESSAGE.SUBMITTING : "시작하기"}
           </button>
         </form>
       </main>

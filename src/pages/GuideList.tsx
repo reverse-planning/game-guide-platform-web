@@ -11,6 +11,7 @@ import { PageShell } from "@/components/shell/PageShell";
 import type { GuideListItem, GuideListSort } from "@/types/guide";
 import { ActionPrimaryLink } from "@/components/actions/ActionPrimaryLink";
 import { GAMES, type GameName } from "@/constants/games";
+import { UI_MESSAGE } from "@/constants/uiMessages";
 
 const PAGE_SIZE = 20;
 const DEFAULT_SORT = "id,desc";
@@ -151,7 +152,7 @@ export default function GuideList() {
       if (err instanceof ListGuidesError) {
         setErrorBanner(LIST_GUIDES_ERROR_MESSAGE[err.code]);
       } else {
-        setErrorBanner("추가 로드에 실패했습니다.");
+        setErrorBanner(UI_MESSAGE.LOAD_MORE_FAILED);
       }
     } finally {
       setIsFetching(false);
@@ -296,8 +297,8 @@ export default function GuideList() {
 
         {/* 로딩/끝 상태 */}
         <div className="py-6 text-center text-sm text-zinc-600">
-          {isFetching && "불러오는 중..."}
-          {!isFetching && !hasNext && "마지막 콘텐츠입니다."}
+          {isFetching && UI_MESSAGE.FETCHING}
+          {!isFetching && !hasNext && UI_MESSAGE.END_OF_LIST}
         </div>
       </main>
     </PageShell>

@@ -11,6 +11,7 @@ import { GAMES, type GameName } from "@/constants/games";
 import { ActionSecondaryLink } from "@/components/actions/ActionSecondaryLink";
 import { ActionPrimaryButton } from "@/components/actions/ActionPrimaryButton";
 import { buildLoginUrl } from "@/routes/utils/buildLoginUrl";
+import { UI_MESSAGE } from "@/constants/uiMessages";
 
 type SubmitStatus = { type: "idle" } | { type: "submitting" } | { type: "error"; message: string };
 
@@ -34,7 +35,7 @@ export default function GuideCreate() {
     const body = String(fd.get("body") ?? "").trim();
 
     if (!title || !game || !body) {
-      setStatus({ type: "error", message: "모든 입력값은 필수입니다." });
+      setStatus({ type: "error", message: UI_MESSAGE.REQUIRED_FIELDS });
       return;
     }
 

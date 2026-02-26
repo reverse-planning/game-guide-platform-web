@@ -3,7 +3,6 @@ import { Link, useNavigate, useParams } from "react-router";
 import { useEffect, useMemo, useState } from "react";
 import { getGuideDetail, GuideDetailError } from "@/services/guideDetailService";
 import { DELETE_GUIDE_ERROR_MESSAGE, GUIDE_DETAIL_ERROR_MESSAGE } from "@/constants/errorMessages";
-import { VALIDATION_MESSAGE } from "@/constants/validationMessages";
 import { deleteGuide, DeleteGuideError } from "@/services/guideDeleteService";
 import { HeaderShell } from "@/components/shell/HeaderShell";
 import { GnbBrand } from "@/components/gnb/GnbBrand";
@@ -14,6 +13,8 @@ import { SessionRequiredError } from "@/services/sessionResolver";
 import { ActionSecondaryLink } from "@/components/actions/ActionSecondaryLink";
 import { ActionDangerButton } from "@/components/actions/ActionDangerButton";
 import { buildLoginUrl } from "@/routes/utils/buildLoginUrl";
+import { ROUTE_MESSAGE } from "@/constants/routeMessages";
+import { UI_MESSAGE } from "@/constants/uiMessages";
 
 type LoadState =
   | { type: "idle" }
@@ -36,7 +37,7 @@ export default function GuideDetail() {
 
     async function run() {
       if (!Number.isInteger(id) || id <= 0) {
-        setState({ type: "error", message: VALIDATION_MESSAGE.INVALID_GUIDE_ID });
+        setState({ type: "error", message: ROUTE_MESSAGE.INVALID_GUIDE_ID });
         return;
       }
 
@@ -87,7 +88,7 @@ export default function GuideDetail() {
   };
 
   const content = (() => {
-    if (state.type === "loading" || state.type === "idle") return "불러오는 중...";
+    if (state.type === "loading" || state.type === "idle") return UI_MESSAGE.FETCHING;
     if (state.type === "error") return state.message;
     return null;
   })();

@@ -1,22 +1,17 @@
 // src/validations/guide.ts
-import type { GameName } from "@/constants/games";
 import { normalizeText, isNonEmpty } from "./text";
+import { UI_MESSAGE } from "@/constants/uiMessages";
+import type { FormState } from "@/pages/GuideEdit";
 
-export type CreateGuideDraft = {
-  title: string;
-  game: GameName;
-  content: string;
-};
-
-export function validateCreateGuideDraft(draft: CreateGuideDraft) {
+export function validateCreateGuideDraft(draft: FormState) {
   const value = {
     title: normalizeText(draft.title),
     game: normalizeText(draft.game),
-    content: normalizeText(draft.content),
+    body: normalizeText(draft.body),
   };
 
-  if (!isNonEmpty(value.title) || !isNonEmpty(value.game) || !isNonEmpty(value.content)) {
-    return { ok: false as const, message: "모든 입력값은 필수입니다." };
+  if (!isNonEmpty(value.title) || !isNonEmpty(value.game) || !isNonEmpty(value.body)) {
+    return { ok: false as const, message: UI_MESSAGE.REQUIRED_FIELDS };
   }
 
   return { ok: true as const, value };
