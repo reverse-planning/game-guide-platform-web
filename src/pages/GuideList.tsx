@@ -12,8 +12,12 @@ import type { GuideListItem, GuideListSort } from "@/types/guide";
 import { ActionPrimaryLink } from "@/components/actions/ActionPrimaryLink";
 import { GAMES, type GameName } from "@/constants/games";
 
+const PAGE_SIZE = 20;
+const DEFAULT_SORT = "id,desc";
+const ROOT_MARGIN = "200px";
+
 const SORT_OPTIONS: Array<{ label: string; value: GuideListSort }> = [
-  { label: "최신순", value: "id,desc" }, // 최신 = id desc (서버 스펙)
+  { label: "최신순", value: "id,desc" },
   { label: "조회순", value: "views,desc" },
 ];
 
@@ -22,8 +26,12 @@ export default function GuideList() {
 
   const { isAuthed, sessionNickname } = useSessionView();
 
+  // ✅ 입력 표시용(조합 중에도 바뀜)
   const [query, setQuery] = useState("");
-  const [sort, setSort] = useState<GuideListSort>("id,desc");
+  // ✅ 서버 요청용(조합 끝났을 때만 바뀜)
+  const [effectiveQuery, setEffectiveQuery] = useState("");
+
+  const [sort, setSort] = useState<GuideListSort>(DEFAULT_SORT);
   const [game, setGame] = useState<GameName | "ALL">("ALL");
 
   const [items, setItems] = useState<GuideListItem[]>([]);
@@ -34,11 +42,14 @@ export default function GuideList() {
 
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
+  // ✅ IME 조합 상태
+  const isComposingRef = useRef(false);
+
   // IntersectionObserver에서 최신 상태를 안정적으로 참조하기 위한 ref
   const pageRef = useRef(page);
   const fetchingRef = useRef(isFetching);
   const hasNextRef = useRef(hasNext);
-  const queryRef = useRef(query);
+  const effectiveQueryRef = useRef(effectiveQuery);
   const sortRef = useRef<GuideListSort>(sort);
   useEffect(() => {
     pageRef.current = page;
@@ -50,9 +61,9 @@ export default function GuideList() {
     hasNextRef.current = hasNext;
   }, [hasNext]);
   useEffect(() => {
-    queryRef.current = query;
+    effectiveQueryRef.current = effectiveQuery;
     sortRef.current = sort;
-  }, [query, sort]);
+  }, [effectiveQuery, sort]);
 
   // ✅ 서버에서 받아온 items에 대해 "프론트 게임 필터" 적용
   const filteredItems = useMemo(() => {
@@ -60,7 +71,7 @@ export default function GuideList() {
     return items.filter((it) => it.game === game);
   }, [items, game]);
 
-  // ✅ 검색어/정렬 변경 시: 서버에서 0페이지부터 다시 로드
+  // ✅ effectiveQuery/정렬 변경 시: 서버에서 0페이지부터 다시 로드
   // (게임 필터는 프론트 가공이므로 서버 재요청 트리거에 포함하지 않음)
   useEffect(() => {
     let ignore = false;
@@ -70,7 +81,7 @@ export default function GuideList() {
       setIsFetching(true);
 
       try {
-        const data = await listGuides({ query, page: 0, size: 20, sort });
+        const data = await listGuides({ query: effectiveQuery, page: 0, size: PAGE_SIZE, sort });
         if (ignore) return;
 
         setItems(data.items);
@@ -96,7 +107,7 @@ export default function GuideList() {
     return () => {
       ignore = true;
     };
-  }, [query, sort]);
+  }, [effectiveQuery, sort]);
 
   const loadMore = useCallback(async () => {
     if (fetchingRef.current || !hasNextRef.current) return;
@@ -107,9 +118,9 @@ export default function GuideList() {
       const nextPage = pageRef.current + 1;
 
       const data = await listGuides({
-        query: queryRef.current,
+        query: effectiveQueryRef.current,
         page: nextPage,
-        size: 20,
+        size: PAGE_SIZE,
         sort: sortRef.current,
       });
 
@@ -138,7 +149,7 @@ export default function GuideList() {
         const [entry] = entries;
         if (entry?.isIntersecting) loadMore();
       },
-      { root: null, rootMargin: "200px", threshold: 0 },
+      { root: null, rootMargin: ROOT_MARGIN, threshold: 0 },
     );
 
     io.observe(el);
@@ -153,14 +164,28 @@ export default function GuideList() {
     navigate(`/guides/${id}`);
   };
 
-  const sortValueKey = useMemo(() => JSON.stringify(sort), [sort]);
-
   return (
     <PageShell>
       <HeaderShell
         left={<GnbBrand />}
         center={
-          <GnbSearch value={query} onChange={setQuery} placeholder="공략 검색 (제목/본문/게임)" />
+          <GnbSearch
+            value={query}
+            onChange={(v) => {
+              setQuery(v); // 화면 표시용 값은 항상 갱신
+              if (!isComposingRef.current) setEffectiveQuery(v); // 조합 중이 아니면(영문/붙여넣기 포함) 즉시 검색 반영
+            }}
+            onCompositionStart={() => {
+              isComposingRef.current = true;
+            }}
+            onCompositionEnd={(v) => {
+              isComposingRef.current = false;
+              setQuery(v); // optional: UI도 최신 확정
+              setEffectiveQuery(v); // ✅ 서버 검색 트리거는 확정된 값
+              console.log("조합 완료", v);
+            }}
+            placeholder="공략 검색 (제목/본문/게임)"
+          />
         }
         right={<GnbAuthStatus isAuthed={isAuthed} nickname={sessionNickname} />}
       />
@@ -180,12 +205,12 @@ export default function GuideList() {
               {/* 정렬 */}
               <label className="text-sm font-medium text-zinc-800">정렬</label>
               <select
-                value={sortValueKey}
-                onChange={(e) => setSort(JSON.parse(e.target.value) as GuideListSort)}
+                value={sort}
+                onChange={(e) => setSort(e.target.value as GuideListSort)}
                 className="h-9 rounded-lg border px-3 text-sm"
               >
                 {SORT_OPTIONS.map((opt) => (
-                  <option key={opt.label} value={JSON.stringify(opt.value)}>
+                  <option key={opt.label} value={opt.value}>
                     {opt.label}
                   </option>
                 ))}

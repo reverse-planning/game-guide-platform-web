@@ -4,14 +4,25 @@ type GnbSearchProps = {
   onChange: (v: string) => void;
   onClear?: () => void;
   placeholder?: string;
+  onCompositionStart?: () => void;
+  onCompositionEnd?: (v: string) => void;
 };
 
-export function GnbSearch({ value, onChange, onClear, placeholder = "검색" }: GnbSearchProps) {
+export function GnbSearch({
+  value,
+  onChange,
+  onClear,
+  placeholder = "검색",
+  onCompositionStart,
+  onCompositionEnd,
+}: GnbSearchProps) {
   return (
     <div className="relative w-full">
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onCompositionStart={() => onCompositionStart?.()}
+        onCompositionEnd={(e) => onCompositionEnd?.(e.currentTarget.value)}
         placeholder={placeholder}
         className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-zinc-900"
       />
