@@ -15,6 +15,7 @@ import { GAMES, type GameName } from "@/constants/games";
 const PAGE_SIZE = 20;
 const DEFAULT_SORT = "id,desc";
 const ROOT_MARGIN = "200px";
+const DEBOUNCE_MS = 250;
 
 const SORT_OPTIONS: Array<{ label: string; value: GuideListSort }> = [
   { label: "최신순", value: "id,desc" },
@@ -28,7 +29,9 @@ export default function GuideList() {
 
   // ✅ 입력 표시용(조합 중에도 바뀜)
   const [query, setQuery] = useState("");
-  // ✅ 서버 요청용(조합 끝났을 때만 바뀜)
+  // ✅ debounce 결과(입력이 멈추면 갱신)
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  // ✅ 서버 요청용(조합 정책 + debounce 통과 후 반영)
   const [effectiveQuery, setEffectiveQuery] = useState("");
 
   const [sort, setSort] = useState<GuideListSort>(DEFAULT_SORT);
@@ -64,6 +67,22 @@ export default function GuideList() {
     effectiveQueryRef.current = effectiveQuery;
     sortRef.current = sort;
   }, [effectiveQuery, sort]);
+
+  // ✅ 1) query를 debounce해서 debouncedQuery를 만든다
+  useEffect(() => {
+    const t = window.setTimeout(() => {
+      setDebouncedQuery(query);
+    }, DEBOUNCE_MS);
+
+    return () => window.clearTimeout(t);
+  }, [query]);
+
+  // ✅ 2) debounce가 끝나면 effectiveQuery 반영
+  //    단, 조합 중이면 보류(요청 안 함)
+  useEffect(() => {
+    if (isComposingRef.current) return; // ✅ 조합 중이면 여기서 STOP
+    setEffectiveQuery(debouncedQuery); // ✅ 조합 아니면 요청 트리거
+  }, [debouncedQuery]);
 
   // ✅ 서버에서 받아온 items에 대해 "프론트 게임 필터" 적용
   const filteredItems = useMemo(() => {
@@ -172,16 +191,17 @@ export default function GuideList() {
           <GnbSearch
             value={query}
             onChange={(v) => {
-              setQuery(v); // 화면 표시용 값은 항상 갱신
-              if (!isComposingRef.current) setEffectiveQuery(v); // 조합 중이 아니면(영문/붙여넣기 포함) 즉시 검색 반영
+              setQuery(v); // ✅ 입력은 항상 즉시 반영
+              // ❌ 여기서 setEffectiveQuery 하지 않음 (debounce + IME 정책으로 통제)
             }}
             onCompositionStart={() => {
               isComposingRef.current = true;
             }}
             onCompositionEnd={(v) => {
               isComposingRef.current = false;
-              setQuery(v); // optional: UI도 최신 확정
-              setEffectiveQuery(v); // ✅ 서버 검색 트리거는 확정된 값
+              // - v: 확정된 최종 문자열
+              // - query state가 아직 이전 값일 수 있으니 v를 신뢰
+              setEffectiveQuery(v); // ✅ 즉시 요청 트리거 (flush)
               console.log("조합 완료", v);
             }}
             placeholder="공략 검색 (제목/본문/게임)"

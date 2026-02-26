@@ -20,7 +20,7 @@ export function GnbSearch({
     <div className="relative w-full">
       <input
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => onChange(e.currentTarget.value)}
         onCompositionStart={() => onCompositionStart?.()}
         onCompositionEnd={(e) => onCompositionEnd?.(e.currentTarget.value)}
         placeholder={placeholder}
