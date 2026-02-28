@@ -82,6 +82,7 @@ const guides = Array.from({ length: 120 }, (_, i) => {
     game,
     author,
     updatedAt: new Date(Date.now() - Math.floor(rng() * 1000 * 60 * 60 * 24 * 14)).toISOString(),
+    viewCount: i,
   };
 });
 

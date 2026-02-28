@@ -1,17 +1,24 @@
-import type { UserId } from "@/types/id";
-
 /* =========================
  * Session - DTO
  * ========================= */
 
 // POST /api/session response
-export type SessionDto = {
-  userId: UserId;
+export type SessionResponseDto = {
+  userId: number;
   nickname: string;
+  accessToken: string;
+};
+
+export type ReissueResponseDto = {
+  userId: number;
+  nickname: string;
+  accessToken: string;
 };
 
 /* =========================
  * Session - View Model
  * ========================= */
 
-export type Session = SessionDto;
+export type Viewer = {
+  nickname: string;
+};

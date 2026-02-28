@@ -27,6 +27,7 @@ export const guideCreateHandlers = [
       body: body.trim(),
       author: session.nickname,
       updatedAt: "방금",
+      viewCount: 0,
     };
 
     createGuideItem(item); // ✅ 최신 글이 위로 보이게

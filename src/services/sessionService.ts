@@ -1,7 +1,8 @@
 // src/services/sessionService.ts
 import axios from "axios";
 import { apiClient, AppError } from "./apiClient";
-import type { SessionDto } from "@/types/session";
+import type { ReissueResponseDto, SessionResponseDto } from "@/types/session";
+import { useSessionStore } from "@/stores/sessionSlice";
 
 export type CreateSessionErrorCode = "NICKNAME_DUPLICATE" | "UNKNOWN";
 
@@ -14,9 +15,14 @@ export class CreateSessionError extends Error {
   }
 }
 
-export async function createSession(nickname: string): Promise<SessionDto> {
+export async function createSession(nickname: string): Promise<SessionResponseDto> {
   try {
-    const res = await apiClient.post<SessionDto>("/api/session", { nickname });
+    const res = await apiClient.post<SessionResponseDto>("/api/session", { nickname });
+    // AT 저장
+    useSessionStore.getState().setAccessToken(res.data.accessToken);
+    useSessionStore.getState().setViewer({
+      nickname: res.data.nickname,
+    });
     return res.data;
   } catch (err) {
     if (err instanceof AppError) throw err;
@@ -32,8 +38,14 @@ export async function createSession(nickname: string): Promise<SessionDto> {
 }
 
 // 부트스트랩: 현재 세션 조회 (쿠키 기반이면 새로고침 후에도 복구 가능)
-export async function getSession(): Promise<SessionDto> {
-  const res = await apiClient.get<SessionDto>("/api/session");
+export async function getSession(): Promise<SessionResponseDto> {
+  const res = await apiClient.get<SessionResponseDto>("/api/session");
+  return res.data;
+}
+
+// ✅ 토큰 재발급: refreshToken 쿠키 기반
+export async function reissue(): Promise<ReissueResponseDto> {
+  const res = await apiClient.post<ReissueResponseDto>("/api/reissue");
   return res.data;
 }
 

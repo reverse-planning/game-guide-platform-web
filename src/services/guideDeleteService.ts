@@ -1,8 +1,7 @@
 // src/services/guideDeleteService.ts
 import axios from "axios";
 import { apiClient, AppError } from "./apiClient";
-import { getSessionUserIdOrThrow, SessionRequiredError } from "./sessionResolver";
-import type { DeleteGuideRequestDto } from "@/types/guide";
+import { SessionRequiredError } from "./sessionResolver";
 
 export type DeleteGuideErrorCode = "NOT_FOUND" | "FORBIDDEN" | "UNKNOWN";
 
@@ -17,11 +16,7 @@ export class DeleteGuideError extends Error {
 
 export async function deleteGuide(guideId: number): Promise<void> {
   try {
-    const userId = getSessionUserIdOrThrow();
-
-    const req: DeleteGuideRequestDto = { userId };
-
-    await apiClient.delete(`/api/guides/${guideId}`, { data: req });
+    await apiClient.delete(`/api/guides/${guideId}`);
   } catch (err) {
     // ✅ rethrow: 세션 누락은 서비스 도메인 에러로 매핑하지 않는다.
     if (err instanceof SessionRequiredError) throw err;

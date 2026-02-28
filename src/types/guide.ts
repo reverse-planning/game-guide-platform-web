@@ -1,5 +1,5 @@
 import type { GameName } from "@/constants/games";
-import type { GuideId, UserId } from "@/types/id";
+import type { GuideId } from "@/types/id";
 
 /* =========================
  * Guide - DTO
@@ -12,7 +12,7 @@ export type GuideListItemDto = {
   game: GameName;
   author: string;
   updatedAt: string;
-  views?: number;
+  viewCount: number;
 };
 
 export type GuideListResponseDto = {
@@ -28,40 +28,32 @@ export type GuideDetailDto = {
   game: GameName;
   author: string;
   updatedAt: string;
-  views?: number;
+  viewCount: number;
 };
 
 export type CreateGuideRequestDto = {
   title: string;
   body: string;
   game: GameName;
-  userId: UserId;
 };
-
 export type CreateGuideResponseDto = GuideId;
 
 export type UpdateGuideRequestDto = {
   title: string;
   body: string;
   game: GameName;
-  userId: UserId;
 };
+export type UpdateGuideResponseDto = GuideId;
 
-// 스웨거 불명확 방어
-export type UpdateGuideResponseDto = GuideDetailDto | GuideId;
-
-export type DeleteGuideRequestDto = {
-  userId: UserId;
-};
-
+export type DeleteGuideRequestDto = void;
 export type DeleteGuideResponseDto = void;
 
 /* =========================
  * Guide - Query
  * ========================= */
 
-// 서버 스펙: sort: ["id","desc"] 형태
-export type GuideListSort = "id,desc" | "id,asc" | "views,desc" | "views,asc";
+// 서버 스펙: sort: ["updatedAt","desc"] 형태
+export type GuideListSort = "updatedAt,desc" | "updatedAt,asc" | "viewCount,desc" | "viewCount,asc";
 
 export type GuideListQuery = {
   query?: string;

@@ -1,6 +1,4 @@
 // src/services/sessionResolver.ts
-import { useSessionStore } from "@/stores/sessionSlice";
-import type { UserId } from "@/types/id";
 
 export class SessionRequiredError extends Error {
   constructor() {
@@ -9,8 +7,9 @@ export class SessionRequiredError extends Error {
   }
 }
 
-export function getSessionUserIdOrThrow(): UserId {
-  const session = useSessionStore.getState().session;
-  if (!session?.userId) throw new SessionRequiredError();
-  return session.userId as UserId;
-}
+// 쿠키 기반 방식에서는 서비스 레이어에서의 세션 누락 검사가 불필요해짐.
+// export function getSessionUserIdOrThrow(): UserId {
+//   const session = useSessionStore.getState().session;
+//   if (!session?.userId) throw new SessionRequiredError();
+//   return session.userId as UserId;
+// }

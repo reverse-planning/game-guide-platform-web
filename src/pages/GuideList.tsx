@@ -14,13 +14,13 @@ import { GAMES, type GameName } from "@/constants/games";
 import { UI_MESSAGE } from "@/constants/uiMessages";
 
 const PAGE_SIZE = 20;
-const DEFAULT_SORT = "id,desc";
+const DEFAULT_SORT = "updatedAt,desc";
 const ROOT_MARGIN = "200px";
 const DEBOUNCE_MS = 250;
 
 const SORT_OPTIONS: Array<{ label: string; value: GuideListSort }> = [
-  { label: "최신순", value: "id,desc" },
-  { label: "조회순", value: "views,desc" },
+  { label: "최신순", value: "updatedAt,desc" },
+  { label: "조회순", value: "viewCount,desc" },
 ];
 
 export default function GuideList() {

@@ -17,7 +17,7 @@ export default function Home() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const { setSession, getNicknameHint, setNicknameHint } = useSessionStore();
+  const { getNicknameHint, setNicknameHint } = useSessionStore();
   const { isAuthed } = useSessionView();
 
   const [inputNickname, setInputNickname] = useState(() => getNicknameHint() ?? "");
@@ -35,10 +35,6 @@ export default function Home() {
 
     try {
       const data = await createSession(name);
-
-      // ✅ 세션은 store(메모리)에만
-      setSession({ userId: data.userId, nickname: data.nickname });
-
       // ✅ localStorage는 UX 힌트(프리필)만
       setNicknameHint(data.nickname);
 

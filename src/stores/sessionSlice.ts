@@ -1,17 +1,15 @@
 // src/stores/sessionSlice.ts
+import type { Viewer } from "@/types/session";
 import { create } from "zustand";
 
-export type Session = {
-  userId: number;
-  nickname: string;
-};
-
+// 메모리 세션 제어 (SSOT는 서버, store는 캐시/뷰모델)
 interface SessionState {
-  session: Session | null;
+  viewer: Viewer | null;
+  accessToken: string | null;
 
-  // 메모리 세션 제어 (SSOT는 서버, store는 캐시/뷰모델)
-  setSession: (session: Session) => void;
-  resetSession: () => void;
+  setViewer: (viewer: Viewer) => void;
+  setAccessToken: (token: string | null) => void;
+  resetViewer: () => void;
 
   // localStorage는 보조(UX)만: 닉네임 프리필
   getNicknameHint: () => string | null;
@@ -35,10 +33,12 @@ function safeRemove(key: string) {
 }
 
 export const useSessionStore = create<SessionState>((set) => ({
-  session: null,
+  viewer: null,
+  accessToken: null,
 
-  setSession: (session) => set({ session }),
-  resetSession: () => set({ session: null }),
+  setViewer: (viewer) => set({ viewer }),
+  setAccessToken: (token) => set({ accessToken: token }),
+  resetViewer: () => set({ viewer: null, accessToken: null }),
 
   getNicknameHint: () => safeGet(NICKNAME_KEY),
   setNicknameHint: (nickname) => safeSet(NICKNAME_KEY, nickname),
