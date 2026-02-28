@@ -5,7 +5,7 @@ import type { UpdateGuideRequestDto, UpdateGuideResponseDto } from "@/types/guid
 import type { GuideId } from "@/types/id";
 import { getSessionUserIdOrThrow, SessionRequiredError } from "@/services/sessionResolver";
 
-export type UpdateGuideErrorCode = "BAD_REQUEST" | "NOT_FOUND" | "NETWORK" | "SERVER" | "UNKNOWN";
+export type UpdateGuideErrorCode = "BAD_REQUEST" | "NOT_FOUND" | "UNKNOWN";
 
 export class UpdateGuideError extends Error {
   code: UpdateGuideErrorCode;
@@ -33,16 +33,16 @@ export async function updateGuide(
     const res = await apiClient.patch<UpdateGuideResponseDto>(`/api/guides/${guideId}`, req);
     return res.data;
   } catch (err) {
-    // ✅ 요청 전 세션 누락은 "도메인 실패"가 아니라 "흐름 위반" → 그대로 올림
+    // 요청 전 세션 누락은 "도메인 실패"가 아니라 "흐름 위반" → 그대로 올림
     if (err instanceof SessionRequiredError) throw err;
-
-    if (err instanceof AppError) {
-      if (err.code === "UNAUTHORIZED") throw err;
-      if (err.code === "NETWORK") throw new UpdateGuideError("NETWORK");
-      if (err.code === "SERVER") throw new UpdateGuideError("SERVER");
-    } else if (axios.isAxiosError(err)) {
+    // 전역(AppError)은 그대로
+    if (err instanceof AppError) throw err;
+    // 4xx 의미 해석
+    if (axios.isAxiosError(err)) {
       if (err.response?.status === 400) throw new UpdateGuideError("BAD_REQUEST");
       if (err.response?.status === 404) throw new UpdateGuideError("NOT_FOUND");
+      // 그 외 4xx는 도메인에서 미정의 → UNKNOWN으로
+      throw new UpdateGuideError("UNKNOWN");
     }
 
     throw new UpdateGuideError("UNKNOWN");

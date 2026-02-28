@@ -4,7 +4,7 @@ import { apiClient, AppError } from "./apiClient";
 import { getSessionUserIdOrThrow, SessionRequiredError } from "./sessionResolver";
 import type { DeleteGuideRequestDto } from "@/types/guide";
 
-export type DeleteGuideErrorCode = "NOT_FOUND" | "FORBIDDEN" | "NETWORK" | "SERVER" | "UNKNOWN";
+export type DeleteGuideErrorCode = "NOT_FOUND" | "FORBIDDEN" | "UNKNOWN";
 
 export class DeleteGuideError extends Error {
   code: DeleteGuideErrorCode;
@@ -25,12 +25,10 @@ export async function deleteGuide(guideId: number): Promise<void> {
   } catch (err) {
     // ✅ rethrow: 세션 누락은 서비스 도메인 에러로 매핑하지 않는다.
     if (err instanceof SessionRequiredError) throw err;
-
-    if (err instanceof AppError) {
-      if (err.code === "UNAUTHORIZED") throw err;
-      if (err.code === "NETWORK") throw new DeleteGuideError("NETWORK");
-      if (err.code === "SERVER") throw new DeleteGuideError("SERVER");
-    } else if (axios.isAxiosError(err)) {
+    // 전역(AppError) 처리 대상은 그대로 올림
+    if (err instanceof AppError) throw err;
+    // 4xx 의미 해석 (도메인)
+    if (axios.isAxiosError(err)) {
       if (err.response?.status === 404) throw new DeleteGuideError("NOT_FOUND");
       if (err.response?.status === 403) throw new DeleteGuideError("FORBIDDEN");
     }

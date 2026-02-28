@@ -3,7 +3,7 @@ import axios from "axios";
 import { apiClient, AppError } from "./apiClient";
 import type { SessionDto } from "@/types/session";
 
-export type CreateSessionErrorCode = "NICKNAME_DUPLICATE" | "NETWORK" | "SERVER" | "UNKNOWN";
+export type CreateSessionErrorCode = "NICKNAME_DUPLICATE" | "UNKNOWN";
 
 export class CreateSessionError extends Error {
   code: CreateSessionErrorCode;
@@ -19,11 +19,9 @@ export async function createSession(nickname: string): Promise<SessionDto> {
     const res = await apiClient.post<SessionDto>("/api/session", { nickname });
     return res.data;
   } catch (err) {
-    if (err instanceof AppError) {
-      if (err.code === "UNAUTHORIZED") throw err;
-      if (err.code === "NETWORK") throw new CreateSessionError("NETWORK");
-      if (err.code === "SERVER") throw new CreateSessionError("SERVER");
-    } else if (axios.isAxiosError(err)) {
+    if (err instanceof AppError) throw err;
+
+    if (axios.isAxiosError(err)) {
       if (err.response?.status === 409 && err.response.data?.message === "NICKNAME_DUPLICATE") {
         throw new CreateSessionError("NICKNAME_DUPLICATE");
       }

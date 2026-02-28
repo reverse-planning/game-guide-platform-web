@@ -7,7 +7,7 @@ import {
   type GuideListResult,
 } from "@/types/guide";
 
-export type ListGuidesErrorCode = "RATE_LIMITED" | "NETWORK" | "SERVER" | "UNKNOWN";
+export type ListGuidesErrorCode = "RATE_LIMITED" | "UNKNOWN";
 
 export class ListGuidesError extends Error {
   code: ListGuidesErrorCode;
@@ -30,11 +30,9 @@ export async function listGuides(params: GuideListQuery): Promise<GuideListResul
     });
     return toGuideListResult(res.data);
   } catch (err) {
-    if (err instanceof AppError) {
-      if (err.code === "UNAUTHORIZED") throw err;
-      if (err.code === "NETWORK") throw new ListGuidesError("NETWORK");
-      if (err.code === "SERVER") throw new ListGuidesError("SERVER");
-    } else if (axios.isAxiosError(err)) {
+    if (err instanceof AppError) throw err;
+
+    if (axios.isAxiosError(err)) {
       if (err.response?.status === 429) throw new ListGuidesError("RATE_LIMITED");
     }
 
