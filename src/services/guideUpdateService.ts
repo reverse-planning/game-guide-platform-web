@@ -3,7 +3,7 @@ import axios from "axios";
 import { apiClient, AppError } from "./apiClient";
 import type { UpdateGuideRequestDto, UpdateGuideResponseDto } from "@/types/guide";
 import type { GuideId } from "@/types/id";
-import { getSessionUserIdOrThrow, SessionRequiredError } from "@/services/sessionResolver";
+import { SessionRequiredError } from "@/services/sessionResolver";
 
 export type UpdateGuideErrorCode = "BAD_REQUEST" | "NOT_FOUND" | "UNKNOWN";
 
@@ -23,11 +23,8 @@ export async function updateGuide(
   body: UpdateGuideBody,
 ): Promise<UpdateGuideResponseDto> {
   try {
-    const userId = getSessionUserIdOrThrow();
-
     const req: UpdateGuideRequestDto = {
       ...body,
-      userId,
     };
 
     const res = await apiClient.patch<UpdateGuideResponseDto>(`/api/guides/${guideId}`, req);

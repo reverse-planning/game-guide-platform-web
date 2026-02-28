@@ -6,5 +6,4 @@
 
 export type Id = number;
 
-export type UserId = Id;
 export type GuideId = Id;

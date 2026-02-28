@@ -1,4 +1,4 @@
-import axios, { AxiosError } from "axios";
+import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
 import { useSessionStore } from "@/stores/sessionSlice";
 
 export type AppErrorCode = "UNAUTHORIZED" | "NETWORK" | "SERVER" | "UNKNOWN";
@@ -15,7 +15,26 @@ export class AppError extends Error {
   }
 }
 
-export const apiClient = axios.create();
+export const apiClient = axios.create({
+  withCredentials: true,
+});
+
+/* =========================
+ * 1. 요청 인터셉터: AT 자동 주입
+ * ========================= */
+apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+  const { accessToken } = useSessionStore.getState();
+
+  if (accessToken) {
+    config.headers.Authorization = `Bearer ${accessToken}`;
+  }
+
+  return config;
+});
+
+/* =========================
+ * 2. 응답 인터셉터: 401 → reissue → 재시도
+ * ========================= */
 
 apiClient.interceptors.response.use(
   (res) => res,
@@ -23,7 +42,7 @@ apiClient.interceptors.response.use(
     const status = err.response?.status;
 
     if (status === 401) {
-      useSessionStore.getState().resetSession();
+      useSessionStore.getState().resetViewer();
       return Promise.reject(new AppError("UNAUTHORIZED", "UNAUTHORIZED", 401));
     }
 

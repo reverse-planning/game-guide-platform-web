@@ -9,15 +9,15 @@ import GuideEdit from "@/pages/GuideEdit.tsx";
 import { redirectToLogin } from "./utils/redirectToLogin";
 
 function redirectAuthedHome() {
-  const { session } = useSessionStore.getState();
-  if (session?.userId) throw redirect("/guides");
+  const { accessToken } = useSessionStore.getState();
+  if (accessToken) throw redirect("/guides");
 
   return null;
 }
 
 function requireSession({ request }: { request: Request }) {
-  const { session } = useSessionStore.getState();
-  if (session?.userId) return null;
+  const { accessToken } = useSessionStore.getState();
+  if (accessToken) return null;
 
   throw redirectToLogin(request.url);
 }

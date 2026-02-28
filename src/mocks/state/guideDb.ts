@@ -32,6 +32,7 @@ function toListItem(detail: GuideDetailDto): GuideListItemDto {
     game: detail.game,
     author: detail.author,
     updatedAt: detail.updatedAt,
+    viewCount: 0,
   };
 }
 

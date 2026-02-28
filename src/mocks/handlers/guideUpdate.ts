@@ -41,7 +41,7 @@ export const guideUpdateHandlers = [
       return HttpResponse.json({ message: "NOT_FOUND" }, { status: 404 });
     }
 
-    const response: UpdateGuideResponseDto = next;
+    const response: UpdateGuideResponseDto = next.id;
     return HttpResponse.json(response, { status: 200 });
   }),
 ];

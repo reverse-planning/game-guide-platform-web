@@ -2,7 +2,7 @@
 import axios from "axios";
 import { apiClient, AppError } from "./apiClient";
 import type { CreateGuideRequestDto, CreateGuideResponseDto } from "@/types/guide";
-import { getSessionUserIdOrThrow, SessionRequiredError } from "@/services/sessionResolver";
+import { SessionRequiredError } from "@/services/sessionResolver";
 
 export type CreateGuideErrorCode = "BAD_REQUEST" | "UNKNOWN";
 
@@ -19,12 +19,7 @@ export type CreateGuideBody = Pick<CreateGuideRequestDto, "title" | "game" | "bo
 
 export async function createGuide(body: CreateGuideBody): Promise<CreateGuideResponseDto> {
   try {
-    const userId = getSessionUserIdOrThrow();
-
-    const req: CreateGuideRequestDto = {
-      ...body,
-      userId,
-    };
+    const req: CreateGuideRequestDto = { ...body };
 
     const res = await apiClient.post<CreateGuideResponseDto>("/api/guides", req);
     return res.data;
