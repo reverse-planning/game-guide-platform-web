@@ -1,13 +1,13 @@
 // src/mocks/state/mockSession.ts
-import type { SessionResponseDto } from "@/types/session";
+import type { CreateSessionResponseDto } from "@/types/session";
 
-let mockSession: SessionResponseDto | null = null;
+let mockSession: CreateSessionResponseDto | null = null;
 
 export function getMockSession() {
   return mockSession;
 }
 
-export function setMockSession(session: SessionResponseDto | null) {
+export function setMockSession(session: CreateSessionResponseDto | null) {
   mockSession = session;
 }
 
