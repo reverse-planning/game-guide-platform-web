@@ -4,6 +4,7 @@ import "./index.css";
 import App from "./App.tsx";
 import { ENV } from "./constants/env.ts";
 import * as Sentry from "@sentry/react";
+import { bootstrap } from "./app/bootstrap.ts";
 
 const shouldEnableSentry =
   Boolean(ENV.SENTRY_DSN) && (ENV.SENTRY_ENV === "production" || ENV.SENTRY_ENV === "preview");
@@ -23,21 +24,10 @@ if (shouldEnableSentry) {
   });
 }
 
-async function enableMocking() {
-  if (ENV.API_MODE !== "mock") return;
-
-  const { worker } = await import("./mocks/browser");
-  return worker.start();
-}
-
-enableMocking()
-  .catch((error) => {
-    console.warn("[MSW] Failed to start:", error);
-  })
-  .finally(() => {
-    createRoot(document.getElementById("root")!).render(
-      <StrictMode>
-        <App />
-      </StrictMode>,
-    );
-  });
+bootstrap().finally(() => {
+  createRoot(document.getElementById("root")!).render(
+    <StrictMode>
+      <App />
+    </StrictMode>,
+  );
+});
