@@ -18,7 +18,7 @@ export default function Home() {
   const location = useLocation();
 
   const { getNicknameHint, setNicknameHint } = useSessionStore();
-  const { isAuthed } = useSessionView();
+  const { isSignedIn: isAuthed } = useSessionView();
 
   const [inputNickname, setInputNickname] = useState(() => getNicknameHint() ?? "");
   const [status, setStatus] = useState<SubmitStatus>({ type: "idle" });

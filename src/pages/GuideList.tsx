@@ -12,6 +12,7 @@ import type { GuideListItem, GuideListSort } from "@/types/guide";
 import { ActionPrimaryLink } from "@/components/actions/ActionPrimaryLink";
 import { GAMES, type GameName } from "@/constants/games";
 import { UI_MESSAGE } from "@/constants/uiMessages";
+import { formatDateToMinute } from "@/utils/formatDate";
 
 const PAGE_SIZE = 20;
 const DEFAULT_SORT = "updatedAt,desc";
@@ -26,7 +27,7 @@ const SORT_OPTIONS: Array<{ label: string; value: GuideListSort }> = [
 export default function GuideList() {
   const navigate = useNavigate();
 
-  const { isAuthed, sessionNickname } = useSessionView();
+  const { isSignedIn: isAuthed, sessionNickname } = useSessionView();
 
   // ✅ 입력 표시용(조합 중에도 바뀜)
   const [query, setQuery] = useState("");
@@ -288,6 +289,10 @@ export default function GuideList() {
               </div>
 
               <p className="mt-3 truncate text-sm text-zinc-700">{it.excerpt}</p>
+
+              <div className="mt-3 text-xs text-zinc-500">
+                {formatDateToMinute(it.updatedAt)} · 조회 {it.viewCount}
+              </div>
             </article>
           ))}
         </div>

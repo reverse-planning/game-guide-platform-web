@@ -14,6 +14,8 @@ import { GAMES, type GameName } from "@/constants/games";
 import { buildLoginUrl } from "@/routes/utils/buildLoginUrl";
 import { UI_MESSAGE } from "@/constants/uiMessages";
 import { ROUTE_MESSAGE } from "@/constants/routeMessages";
+import { APP_ERROR_MESSAGE } from "@/constants/appErrorMessages";
+import { AppError } from "@/services/apiClient";
 
 export type FormState = {
   title: string;
@@ -67,6 +69,16 @@ export default function GuideEdit() {
           navigate(buildLoginUrl(window.location.href), { replace: true });
           return;
         }
+        if (err instanceof AppError) {
+          if (err.code === "UNAUTHORIZED") {
+            navigate(buildLoginUrl(window.location.href), { replace: true });
+            return;
+          }
+          // NETWORK / SERVER / UNKNOWN
+          setState({ type: "error", message: APP_ERROR_MESSAGE[err.code] });
+          setBanner(APP_ERROR_MESSAGE[err.code]);
+          return;
+        }
         if (err instanceof GuideDetailError) {
           setState({ type: "error", message: GUIDE_DETAIL_ERROR_MESSAGE[err.code] });
         } else {
@@ -108,12 +120,25 @@ export default function GuideEdit() {
         navigate(buildLoginUrl(window.location.href), { replace: true });
         return;
       }
+
+      if (err instanceof AppError) {
+        if (err.code === "UNAUTHORIZED") {
+          navigate(buildLoginUrl(window.location.href), { replace: true });
+          return;
+        }
+        setState({ type: "error", message: APP_ERROR_MESSAGE[err.code] });
+        setBanner(APP_ERROR_MESSAGE[err.code]);
+        return;
+      }
+
       if (err instanceof UpdateGuideError) {
         setBanner(UPDATE_GUIDE_ERROR_MESSAGE[err.code]);
-      } else {
-        setBanner(UPDATE_GUIDE_ERROR_MESSAGE.UNKNOWN);
+        return;
       }
-      setState({ type: "ready", form: { title, game, body } });
+
+      setBanner(APP_ERROR_MESSAGE.UNKNOWN);
+    } finally {
+      setState((prev) => (prev.type === "saving" ? { type: "loading" } : prev));
     }
   };
 

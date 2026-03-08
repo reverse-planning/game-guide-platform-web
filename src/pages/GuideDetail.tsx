@@ -15,6 +15,8 @@ import { ActionDangerButton } from "@/components/actions/ActionDangerButton";
 import { buildLoginUrl } from "@/routes/utils/buildLoginUrl";
 import { ROUTE_MESSAGE } from "@/constants/routeMessages";
 import { UI_MESSAGE } from "@/constants/uiMessages";
+import { formatDateToMinute } from "@/utils/formatDate";
+import { useSessionView } from "@/stores/sessionSelectors";
 
 type LoadState =
   | { type: "idle" }
@@ -24,13 +26,16 @@ type LoadState =
 
 export default function GuideDetail() {
   const navigate = useNavigate();
-
   const { guideId } = useParams();
+  const { sessionNickname } = useSessionView();
 
   const id = useMemo(() => Number(guideId), [guideId]);
 
   const [state, setState] = useState<LoadState>({ type: "idle" });
   const [actionError, setActionError] = useState<string | null>(null);
+
+  const isOwner =
+    state.type === "success" && sessionNickname !== null && sessionNickname === state.data.author;
 
   useEffect(() => {
     let ignore = false;
@@ -110,11 +115,16 @@ export default function GuideDetail() {
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <h1 className="text-xl font-semibold">{state.data.title}</h1>
+
                 <div className="mt-2 text-sm text-zinc-600">
                   {state.data.game} · {state.data.author}
                 </div>
+
+                <div className="mt-1 text-xs text-zinc-500">조회 {state.data.viewCount}</div>
               </div>
-              <span className="shrink-0 text-sm text-zinc-500">{state.data.updatedAt}</span>
+              <span className="shrink-0 text-sm text-zinc-500">
+                {formatDateToMinute(state.data.updatedAt)}
+              </span>
             </div>
 
             <div className="prose prose-zinc mt-6 max-w-none whitespace-pre-wrap text-sm">
@@ -133,10 +143,12 @@ export default function GuideDetail() {
                 목록으로
               </Link>
 
-              <div className="flex justify-end gap-2">
-                <ActionSecondaryLink to={`/guides/${id}/edit`}>수정</ActionSecondaryLink>
-                <ActionDangerButton onClick={onDelete}>삭제</ActionDangerButton>
-              </div>
+              {isOwner && (
+                <div className="flex justify-end gap-2">
+                  <ActionSecondaryLink to={`/guides/${id}/edit`}>수정</ActionSecondaryLink>
+                  <ActionDangerButton onClick={onDelete}>삭제</ActionDangerButton>
+                </div>
+              )}
             </div>
           </article>
         )}
