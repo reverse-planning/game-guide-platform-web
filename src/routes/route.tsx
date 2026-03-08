@@ -1,5 +1,4 @@
 import { createBrowserRouter, Outlet, redirect } from "react-router";
-import { useSessionStore } from "@/stores/sessionSlice.ts";
 import GuideList from "@/pages/GuideList.tsx";
 import GuideCreate from "@/pages/GuideCreate.tsx";
 import Home from "@/pages/Home.tsx";
@@ -7,16 +6,17 @@ import NotFound from "@/pages/NotFound.tsx";
 import GuideDetail from "@/pages/GuideDetail.tsx";
 import GuideEdit from "@/pages/GuideEdit.tsx";
 import { redirectToLogin } from "./utils/redirectToLogin";
+import { getAccessToken } from "@/services/tokenStorage";
 
 function redirectAuthedHome() {
-  const { accessToken } = useSessionStore.getState();
+  const accessToken = getAccessToken();
   if (accessToken) throw redirect("/guides");
 
   return null;
 }
 
 function requireSession({ request }: { request: Request }) {
-  const { accessToken } = useSessionStore.getState();
+  const accessToken = getAccessToken();
   if (accessToken) return null;
 
   throw redirectToLogin(request.url);

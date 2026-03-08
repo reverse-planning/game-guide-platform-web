@@ -1,8 +1,13 @@
 // src/services/sessionService.ts
 import axios from "axios";
 import { apiClient, AppError } from "./apiClient";
-import type { ReissueResponseDto, SessionResponseDto } from "@/types/session";
+import type {
+  ReissueResponseDto,
+  CreateSessionResponseDto,
+  GetSessionResponseDto,
+} from "@/types/session";
 import { useSessionStore } from "@/stores/sessionSlice";
+import { clearAccessToken, setAccessToken } from "./tokenStorage";
 
 export type CreateSessionErrorCode = "NICKNAME_DUPLICATE" | "UNKNOWN";
 
@@ -15,14 +20,14 @@ export class CreateSessionError extends Error {
   }
 }
 
-export async function createSession(nickname: string): Promise<SessionResponseDto> {
+export async function createSession(nickname: string): Promise<CreateSessionResponseDto> {
   try {
-    const res = await apiClient.post<SessionResponseDto>("/api/session", { nickname });
+    const res = await apiClient.post<CreateSessionResponseDto>("/api/session", { nickname });
+
     // AT 저장
-    useSessionStore.getState().setAccessToken(res.data.accessToken);
-    useSessionStore.getState().setViewer({
-      nickname: res.data.nickname,
-    });
+    setAccessToken(res.data.accessToken);
+    useSessionStore.getState().setViewer({ nickname: res.data.nickname });
+
     return res.data;
   } catch (err) {
     if (err instanceof AppError) throw err;
@@ -37,19 +42,20 @@ export async function createSession(nickname: string): Promise<SessionResponseDt
   }
 }
 
-// 부트스트랩: 현재 세션 조회 (쿠키 기반이면 새로고침 후에도 복구 가능)
-export async function getSession(): Promise<SessionResponseDto> {
-  const res = await apiClient.get<SessionResponseDto>("/api/session");
+export async function getSession(): Promise<GetSessionResponseDto> {
+  const res = await apiClient.get<GetSessionResponseDto>("/api/session");
+  useSessionStore.getState().setViewer({ nickname: res.data.nickname });
   return res.data;
 }
 
-// ✅ 토큰 재발급: refreshToken 쿠키 기반
 export async function reissue(): Promise<ReissueResponseDto> {
   const res = await apiClient.post<ReissueResponseDto>("/api/reissue");
+  setAccessToken(res.data.accessToken);
   return res.data;
 }
 
-// (선택) 로그아웃 API가 있다면
 export async function deleteSession(): Promise<void> {
   await apiClient.delete("/api/session");
+  clearAccessToken();
+  useSessionStore.getState().resetSessionCache();
 }

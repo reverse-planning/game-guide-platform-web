@@ -3,13 +3,12 @@ import type { Viewer } from "@/types/session";
 import { create } from "zustand";
 
 // 메모리 세션 제어 (SSOT는 서버, store는 캐시/뷰모델)
+// Viewer: 현재 화면 기준 사용자(view model)
 interface SessionState {
   viewer: Viewer | null;
-  accessToken: string | null;
 
-  setViewer: (viewer: Viewer) => void;
-  setAccessToken: (token: string | null) => void;
-  resetViewer: () => void;
+  setViewer: (viewer: Viewer | null) => void;
+  resetSessionCache: () => void;
 
   // localStorage는 보조(UX)만: 닉네임 프리필
   getNicknameHint: () => string | null;
@@ -37,8 +36,7 @@ export const useSessionStore = create<SessionState>((set) => ({
   accessToken: null,
 
   setViewer: (viewer) => set({ viewer }),
-  setAccessToken: (token) => set({ accessToken: token }),
-  resetViewer: () => set({ viewer: null, accessToken: null }),
+  resetSessionCache: () => set({ viewer: null }),
 
   getNicknameHint: () => safeGet(NICKNAME_KEY),
   setNicknameHint: (nickname) => safeSet(NICKNAME_KEY, nickname),

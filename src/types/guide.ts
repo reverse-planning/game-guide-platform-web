@@ -1,3 +1,4 @@
+// src/types/guide.ts
 import type { GameName } from "@/constants/games";
 import type { GuideId } from "@/types/id";
 
