@@ -9,7 +9,7 @@ import { GnbBrand } from "@/components/gnb/GnbBrand";
 import { ActionPrimaryLink } from "@/components/actions/ActionPrimaryLink";
 import { PageShell } from "@/components/shell/PageShell";
 import type { GuideDetail as GuideDetailType } from "@/types/guide";
-import { SessionRequiredError } from "@/services/sessionResolver";
+import { AuthRequiredError } from "@/services/authErrors";
 import { ActionSecondaryLink } from "@/components/actions/ActionSecondaryLink";
 import { ActionDangerButton } from "@/components/actions/ActionDangerButton";
 import { buildLoginUrl } from "@/routes/utils/buildLoginUrl";
@@ -34,8 +34,8 @@ export default function GuideDetail() {
   const [state, setState] = useState<LoadState>({ type: "idle" });
   const [actionError, setActionError] = useState<string | null>(null);
 
-  const isOwner =
-    state.type === "success" && sessionNickname !== null && sessionNickname === state.data.author;
+  const detail = state.type === "success" ? state.data : null;
+  const isOwner = detail !== null && sessionNickname !== null && sessionNickname === detail.author;
 
   useEffect(() => {
     let ignore = false;
@@ -53,11 +53,18 @@ export default function GuideDetail() {
         setState({ type: "success", data });
       } catch (err) {
         if (ignore) return;
+
+        if (err instanceof AuthRequiredError) {
+          navigate(buildLoginUrl(window.location.href), { replace: true });
+          return;
+        }
+
         if (err instanceof GuideDetailError) {
           setState({ type: "error", message: GUIDE_DETAIL_ERROR_MESSAGE[err.code] });
-        } else {
-          setState({ type: "error", message: GUIDE_DETAIL_ERROR_MESSAGE.UNKNOWN });
+          return;
         }
+
+        setState({ type: "error", message: GUIDE_DETAIL_ERROR_MESSAGE.UNKNOWN });
       }
     }
 
@@ -65,7 +72,7 @@ export default function GuideDetail() {
     return () => {
       ignore = true;
     };
-  }, [id]);
+  }, [id, navigate]);
 
   const onDelete = async () => {
     if (!Number.isInteger(id) || id <= 0) return;
@@ -79,16 +86,17 @@ export default function GuideDetail() {
       navigate("/guides", { replace: true });
     } catch (err) {
       // ✅ 세션 누락: 홈으로 보내고 next로 복귀 가능하게
-      if (err instanceof SessionRequiredError) {
+      if (err instanceof AuthRequiredError) {
         navigate(buildLoginUrl(window.location.href), { replace: true });
         return;
       }
 
       if (err instanceof DeleteGuideError) {
         setActionError(DELETE_GUIDE_ERROR_MESSAGE[err.code]);
-      } else {
-        setActionError(DELETE_GUIDE_ERROR_MESSAGE.UNKNOWN);
+        return;
       }
+
+      setActionError(DELETE_GUIDE_ERROR_MESSAGE.UNKNOWN);
     }
   };
 
@@ -106,29 +114,30 @@ export default function GuideDetail() {
       />
 
       <main className="mx-auto max-w-3xl p-4">
-        {state.type !== "success" ? (
-          <div className="rounded-xl border bg-white p-6 shadow-sm text-sm text-zinc-700">
+        {detail === null ? (
+          <div className="rounded-xl border bg-white p-6 text-sm text-zinc-700 shadow-sm">
             {content}
           </div>
         ) : (
           <article className="rounded-xl border bg-white p-6 shadow-sm">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <h1 className="text-xl font-semibold">{state.data.title}</h1>
+                <h1 className="text-xl font-semibold">{detail.title}</h1>
 
                 <div className="mt-2 text-sm text-zinc-600">
-                  {state.data.game} · {state.data.author}
+                  {detail.game} · {detail.author}
                 </div>
 
-                <div className="mt-1 text-xs text-zinc-500">조회 {state.data.viewCount}</div>
+                <div className="mt-1 text-xs text-zinc-500">조회 {detail.viewCount}</div>
               </div>
+
               <span className="shrink-0 text-sm text-zinc-500">
-                {formatDateToMinute(state.data.updatedAt)}
+                {formatDateToMinute(detail.updatedAt)}
               </span>
             </div>
 
             <div className="prose prose-zinc mt-6 max-w-none whitespace-pre-wrap text-sm">
-              {state.data.body}
+              {detail.body}
             </div>
 
             {actionError && (

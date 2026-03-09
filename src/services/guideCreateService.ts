@@ -2,7 +2,7 @@
 import axios from "axios";
 import { apiClient, AppError } from "./apiClient";
 import type { CreateGuideRequestDto, CreateGuideResponseDto } from "@/types/guide";
-import { SessionRequiredError } from "@/services/sessionResolver";
+import { AuthRequiredError } from "@/services/authErrors";
 
 export type CreateGuideErrorCode = "BAD_REQUEST" | "UNKNOWN";
 
@@ -24,12 +24,14 @@ export async function createGuide(body: CreateGuideBody): Promise<CreateGuideRes
     const res = await apiClient.post<CreateGuideResponseDto>("/api/guides", req);
     return res.data;
   } catch (err) {
-    // ✅ 요청 전 세션 누락은 "도메인 실패"가 아니라 "흐름 위반" → 그대로 올림
-    if (err instanceof SessionRequiredError) throw err;
-    if (err instanceof AppError) throw err;
+    if (err instanceof AppError) {
+      if (err.code === "UNAUTHORIZED") throw new AuthRequiredError();
+      throw err;
+    }
     // 도메인 4xx
     if (axios.isAxiosError(err)) {
       if (err.response?.status === 400) throw new CreateGuideError("BAD_REQUEST");
+      throw new CreateGuideError("UNKNOWN");
     }
 
     throw new CreateGuideError("UNKNOWN");

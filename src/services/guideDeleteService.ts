@@ -1,7 +1,7 @@
 // src/services/guideDeleteService.ts
 import axios from "axios";
 import { apiClient, AppError } from "./apiClient";
-import { SessionRequiredError } from "./sessionResolver";
+import { AuthRequiredError } from "./authErrors";
 
 export type DeleteGuideErrorCode = "NOT_FOUND" | "FORBIDDEN" | "UNKNOWN";
 
@@ -18,14 +18,17 @@ export async function deleteGuide(guideId: number): Promise<void> {
   try {
     await apiClient.delete(`/api/guides/${guideId}`);
   } catch (err) {
-    // ✅ rethrow: 세션 누락은 서비스 도메인 에러로 매핑하지 않는다.
-    if (err instanceof SessionRequiredError) throw err;
-    // 전역(AppError) 처리 대상은 그대로 올림
-    if (err instanceof AppError) throw err;
+    if (err instanceof AppError) {
+      if (err.code === "UNAUTHORIZED") throw new AuthRequiredError();
+      // NETWORK, SERVER 등은 공통 에러 의미를 유지
+      throw err;
+    }
+
     // 4xx 의미 해석 (도메인)
     if (axios.isAxiosError(err)) {
       if (err.response?.status === 404) throw new DeleteGuideError("NOT_FOUND");
       if (err.response?.status === 403) throw new DeleteGuideError("FORBIDDEN");
+      throw new DeleteGuideError("UNKNOWN");
     }
 
     throw new DeleteGuideError("UNKNOWN");

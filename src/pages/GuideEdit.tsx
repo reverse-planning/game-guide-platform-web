@@ -7,7 +7,7 @@ import { GUIDE_DETAIL_ERROR_MESSAGE, UPDATE_GUIDE_ERROR_MESSAGE } from "@/consta
 import { HeaderShell } from "@/components/shell/HeaderShell";
 import { GnbBrand } from "@/components/gnb/GnbBrand";
 import { PageShell } from "@/components/shell/PageShell";
-import { SessionRequiredError } from "@/services/sessionResolver";
+import { AuthRequiredError } from "@/services/authErrors";
 import { ActionSecondaryLink } from "@/components/actions/ActionSecondaryLink";
 import { ActionPrimaryButton } from "@/components/actions/ActionPrimaryButton";
 import { GAMES, type GameName } from "@/constants/games";
@@ -65,7 +65,7 @@ export default function GuideEdit() {
         if (ignore) return;
 
         // ✅ 세션 누락: 홈으로 보내고 next로 복귀 가능하게
-        if (err instanceof SessionRequiredError) {
+        if (err instanceof AuthRequiredError) {
           navigate(buildLoginUrl(window.location.href), { replace: true });
           return;
         }
@@ -116,7 +116,7 @@ export default function GuideEdit() {
       navigate(`/guides/${id}`, { replace: true });
     } catch (err) {
       // ✅ 세션 누락: 홈으로 보내고 next로 복귀 가능하게
-      if (err instanceof SessionRequiredError) {
+      if (err instanceof AuthRequiredError) {
         navigate(buildLoginUrl(window.location.href), { replace: true });
         return;
       }

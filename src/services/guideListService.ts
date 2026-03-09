@@ -6,6 +6,7 @@ import {
   type GuideListResponseDto,
   type GuideListResult,
 } from "@/types/guide";
+import { AuthRequiredError } from "./authErrors";
 
 export type ListGuidesErrorCode = "RATE_LIMITED" | "UNKNOWN";
 
@@ -30,10 +31,14 @@ export async function listGuides(params: GuideListQuery): Promise<GuideListResul
     });
     return toGuideListResult(res.data);
   } catch (err) {
-    if (err instanceof AppError) throw err;
+    if (err instanceof AppError) {
+      if (err.code === "UNAUTHORIZED") throw new AuthRequiredError();
+      throw err;
+    }
 
     if (axios.isAxiosError(err)) {
       if (err.response?.status === 429) throw new ListGuidesError("RATE_LIMITED");
+      throw new ListGuidesError("UNKNOWN");
     }
 
     throw new ListGuidesError("UNKNOWN");
