@@ -17,6 +17,8 @@ import { ROUTE_MESSAGE } from "@/constants/routeMessages";
 import { UI_MESSAGE } from "@/constants/uiMessages";
 import { formatDateToMinute } from "@/utils/formatDate";
 import { useSessionView } from "@/stores/sessionSelectors";
+import { AppError } from "@/services/apiClient";
+import { APP_ERROR_MESSAGE } from "@/constants/appErrorMessages";
 
 type LoadState =
   | { type: "idle" }
@@ -59,6 +61,11 @@ export default function GuideDetail() {
           return;
         }
 
+        if (err instanceof AppError) {
+          setState({ type: "error", message: APP_ERROR_MESSAGE[err.code] });
+          return;
+        }
+
         if (err instanceof GuideDetailError) {
           setState({ type: "error", message: GUIDE_DETAIL_ERROR_MESSAGE[err.code] });
           return;
@@ -88,6 +95,11 @@ export default function GuideDetail() {
       // ✅ 세션 누락: 홈으로 보내고 next로 복귀 가능하게
       if (err instanceof AuthRequiredError) {
         navigate(buildLoginUrl(window.location.href), { replace: true });
+        return;
+      }
+
+      if (err instanceof AppError) {
+        setActionError(APP_ERROR_MESSAGE[err.code]);
         return;
       }
 

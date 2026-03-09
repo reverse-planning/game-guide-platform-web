@@ -1,7 +1,7 @@
 // src/constants/errorMessages.ts
 import type { CreateGuideErrorCode } from "@/services/guideCreateService";
 import type { DeleteGuideErrorCode } from "@/services/guideDeleteService";
-import type { GuideDetailErrorCode } from "@/services/guideDetailService";
+import type { GuideDetailErrorCode, GuideEditDetailErrorCode } from "@/services/guideDetailService";
 import type { ListGuidesErrorCode } from "@/services/guideListService";
 import type { UpdateGuideErrorCode } from "@/services/guideUpdateService";
 import type { CreateSessionErrorCode } from "@/services/sessionService";
@@ -20,6 +20,12 @@ export const GUIDE_DETAIL_ERROR_MESSAGE = {
   NOT_FOUND: "존재하지 않는 공략입니다.",
   UNKNOWN: "공략을 불러오지 못했습니다.",
 } satisfies Record<GuideDetailErrorCode, string>;
+
+export const GUIDE_EDIT_DETAIL_ERROR_MESSAGE = {
+  NOT_FOUND: "존재하지 않는 게시글입니다.",
+  FORBIDDEN: "수정 권한이 없습니다.",
+  UNKNOWN: "수정 정보를 불러오지 못했습니다.",
+} satisfies Record<GuideEditDetailErrorCode, string>;
 
 export const LIST_GUIDES_ERROR_MESSAGE = {
   RATE_LIMITED: "요청이 너무 많습니다. 잠시 후 다시 시도해주세요.",

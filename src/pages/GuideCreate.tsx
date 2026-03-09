@@ -12,6 +12,8 @@ import { ActionSecondaryLink } from "@/components/actions/ActionSecondaryLink";
 import { ActionPrimaryButton } from "@/components/actions/ActionPrimaryButton";
 import { buildLoginUrl } from "@/routes/utils/buildLoginUrl";
 import { UI_MESSAGE } from "@/constants/uiMessages";
+import { AppError } from "@/services/apiClient";
+import { APP_ERROR_MESSAGE } from "@/constants/appErrorMessages";
 
 type SubmitStatus = { type: "idle" } | { type: "submitting" } | { type: "error"; message: string };
 
@@ -51,12 +53,17 @@ export default function GuideCreate() {
         return;
       }
 
+      if (err instanceof AppError) {
+        setStatus({ type: "error", message: APP_ERROR_MESSAGE[err.code] });
+        return;
+      }
+
       if (err instanceof CreateGuideError) {
         setStatus({ type: "error", message: CREATE_GUIDE_ERROR_MESSAGE[err.code] });
-      } else {
-        setStatus({ type: "error", message: CREATE_GUIDE_ERROR_MESSAGE.UNKNOWN });
+        return;
       }
-      return;
+
+      setStatus({ type: "error", message: CREATE_GUIDE_ERROR_MESSAGE.UNKNOWN });
     } finally {
       setStatus((prev) => (prev.type === "submitting" ? { type: "idle" } : prev));
     }

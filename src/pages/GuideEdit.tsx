@@ -1,9 +1,12 @@
 // src/pages/GuideEdit.tsx
 import { useNavigate, useParams } from "react-router";
 import { useEffect, useMemo, useState } from "react";
-import { getGuideDetail, GuideDetailError } from "@/services/guideDetailService";
+import { getGuideEditDetail, GuideEditDetailError } from "@/services/guideDetailService";
 import { updateGuide, UpdateGuideError } from "@/services/guideUpdateService";
-import { GUIDE_DETAIL_ERROR_MESSAGE, UPDATE_GUIDE_ERROR_MESSAGE } from "@/constants/errorMessages";
+import {
+  GUIDE_EDIT_DETAIL_ERROR_MESSAGE,
+  UPDATE_GUIDE_ERROR_MESSAGE,
+} from "@/constants/errorMessages";
 import { HeaderShell } from "@/components/shell/HeaderShell";
 import { GnbBrand } from "@/components/gnb/GnbBrand";
 import { PageShell } from "@/components/shell/PageShell";
@@ -51,7 +54,7 @@ export default function GuideEdit() {
 
       setState({ type: "loading" });
       try {
-        const data = await getGuideDetail(id);
+        const data = await getGuideEditDetail(id);
         if (ignore) return;
         setState({
           type: "ready",
@@ -70,19 +73,15 @@ export default function GuideEdit() {
           return;
         }
         if (err instanceof AppError) {
-          if (err.code === "UNAUTHORIZED") {
-            navigate(buildLoginUrl(window.location.href), { replace: true });
-            return;
-          }
           // NETWORK / SERVER / UNKNOWN
           setState({ type: "error", message: APP_ERROR_MESSAGE[err.code] });
           setBanner(APP_ERROR_MESSAGE[err.code]);
           return;
         }
-        if (err instanceof GuideDetailError) {
-          setState({ type: "error", message: GUIDE_DETAIL_ERROR_MESSAGE[err.code] });
+        if (err instanceof GuideEditDetailError) {
+          setState({ type: "error", message: GUIDE_EDIT_DETAIL_ERROR_MESSAGE[err.code] });
         } else {
-          setState({ type: "error", message: GUIDE_DETAIL_ERROR_MESSAGE.UNKNOWN });
+          setState({ type: "error", message: GUIDE_EDIT_DETAIL_ERROR_MESSAGE.UNKNOWN });
         }
       }
     }
@@ -109,10 +108,11 @@ export default function GuideEdit() {
       return;
     }
 
-    setState({ type: "saving", form: { title, game, body } });
+    const nextForm = { title, game, body };
+    setState({ type: "saving", form: nextForm });
 
     try {
-      await updateGuide(id, { title, game, body });
+      await updateGuide(id, nextForm);
       navigate(`/guides/${id}`, { replace: true });
     } catch (err) {
       // ✅ 세션 누락: 홈으로 보내고 next로 복귀 가능하게
@@ -122,11 +122,7 @@ export default function GuideEdit() {
       }
 
       if (err instanceof AppError) {
-        if (err.code === "UNAUTHORIZED") {
-          navigate(buildLoginUrl(window.location.href), { replace: true });
-          return;
-        }
-        setState({ type: "error", message: APP_ERROR_MESSAGE[err.code] });
+        setState({ type: "ready", form: nextForm });
         setBanner(APP_ERROR_MESSAGE[err.code]);
         return;
       }
@@ -136,9 +132,8 @@ export default function GuideEdit() {
         return;
       }
 
+      setState({ type: "ready", form: nextForm });
       setBanner(APP_ERROR_MESSAGE.UNKNOWN);
-    } finally {
-      setState((prev) => (prev.type === "saving" ? { type: "loading" } : prev));
     }
   };
 

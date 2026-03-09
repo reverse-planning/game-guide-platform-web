@@ -31,6 +31,7 @@ export type GuideDetailDto = {
   updatedAt: string;
   viewCount: number;
 };
+export type GuideEditDetailDto = GuideDetailDto;
 
 export type CreateGuideRequestDto = {
   title: string;

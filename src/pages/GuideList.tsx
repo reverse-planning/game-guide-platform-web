@@ -6,13 +6,18 @@ import { LIST_GUIDES_ERROR_MESSAGE } from "@/constants/errorMessages";
 import { HeaderShell } from "@/components/shell/HeaderShell";
 import { GnbBrand } from "@/components/gnb/GnbBrand";
 import { GnbSearch } from "@/components/gnb/GnbSearch";
-import { GnbAuthStatus } from "@/components/gnb/GnbAuthStatus";
+import { GnbUserStatus } from "@/components/gnb/GnbUserStatus";
 import { PageShell } from "@/components/shell/PageShell";
 import type { GuideListItem, GuideListSort } from "@/types/guide";
 import { ActionPrimaryLink } from "@/components/actions/ActionPrimaryLink";
 import { GAMES, type GameName } from "@/constants/games";
 import { UI_MESSAGE } from "@/constants/uiMessages";
 import { formatDateToMinute } from "@/utils/formatDate";
+import { AppError } from "@/services/apiClient";
+import { AuthRequiredError } from "@/services/authErrors";
+import { buildLoginUrl } from "@/routes/utils/buildLoginUrl";
+import { APP_ERROR_MESSAGE } from "@/constants/appErrorMessages";
+import { deleteSession } from "@/services/sessionService";
 
 const PAGE_SIZE = 20;
 const DEFAULT_SORT = "updatedAt,desc";
@@ -27,7 +32,7 @@ const SORT_OPTIONS: Array<{ label: string; value: GuideListSort }> = [
 export default function GuideList() {
   const navigate = useNavigate();
 
-  const { isSignedIn: isAuthed, sessionNickname } = useSessionView();
+  const { sessionNickname } = useSessionView();
 
   // ✅ 입력 표시용(조합 중에도 바뀜)
   const [query, setQuery] = useState("");
@@ -44,6 +49,7 @@ export default function GuideList() {
   const [isFetching, setIsFetching] = useState(false);
   const [hasNext, setHasNext] = useState(true);
   const [errorBanner, setErrorBanner] = useState<string | null>(null);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
@@ -111,6 +117,18 @@ export default function GuideList() {
       } catch (err) {
         if (ignore) return;
 
+        if (err instanceof AuthRequiredError) {
+          navigate(buildLoginUrl(window.location.href), { replace: true });
+          return;
+        }
+
+        if (err instanceof AppError) {
+          setErrorBanner(APP_ERROR_MESSAGE[err.code]);
+          setItems([]);
+          setHasNext(false);
+          return;
+        }
+
         if (err instanceof ListGuidesError) {
           setErrorBanner(LIST_GUIDES_ERROR_MESSAGE[err.code]);
         } else {
@@ -128,7 +146,7 @@ export default function GuideList() {
     return () => {
       ignore = true;
     };
-  }, [effectiveQuery, sort]);
+  }, [effectiveQuery, sort, navigate]);
 
   const loadMore = useCallback(async () => {
     if (fetchingRef.current || !hasNextRef.current) return;
@@ -150,6 +168,16 @@ export default function GuideList() {
       setItems((prev) => [...prev, ...data.items]);
       setPage(nextPage);
     } catch (err) {
+      if (err instanceof AuthRequiredError) {
+        navigate(buildLoginUrl(window.location.href), { replace: true });
+        return;
+      }
+
+      if (err instanceof AppError) {
+        setErrorBanner(APP_ERROR_MESSAGE[err.code]);
+        return;
+      }
+
       if (err instanceof ListGuidesError) {
         setErrorBanner(LIST_GUIDES_ERROR_MESSAGE[err.code]);
       } else {
@@ -158,7 +186,33 @@ export default function GuideList() {
     } finally {
       setIsFetching(false);
     }
-  }, []);
+  }, [navigate]);
+
+  const onLogout = useCallback(async () => {
+    if (isLoggingOut) return;
+
+    setErrorBanner(null);
+    setIsLoggingOut(true);
+
+    try {
+      await deleteSession();
+      navigate("/", { replace: true });
+    } catch (err) {
+      if (err instanceof AuthRequiredError) {
+        navigate("/", { replace: true });
+        return;
+      }
+
+      if (err instanceof AppError) {
+        setErrorBanner(APP_ERROR_MESSAGE[err.code]);
+        return;
+      }
+
+      setErrorBanner(APP_ERROR_MESSAGE.UNKNOWN);
+    } finally {
+      setIsLoggingOut(false);
+    }
+  }, [isLoggingOut, navigate]);
 
   // ✅ 무한 스크롤: IntersectionObserver (관찰만, 데이터는 service가 담당)
   useEffect(() => {
@@ -209,7 +263,13 @@ export default function GuideList() {
             placeholder="공략 검색 (제목/본문/게임)"
           />
         }
-        right={<GnbAuthStatus isAuthed={isAuthed} nickname={sessionNickname} />}
+        right={
+          <GnbUserStatus
+            nickname={sessionNickname}
+            onLogout={onLogout}
+            isLoggingOut={isLoggingOut}
+          />
+        }
       />
 
       <main className="mx-auto max-w-6xl p-4">
@@ -303,7 +363,7 @@ export default function GuideList() {
         {/* 로딩/끝 상태 */}
         <div className="py-6 text-center text-sm text-zinc-600">
           {isFetching && UI_MESSAGE.FETCHING}
-          {!isFetching && !hasNext && UI_MESSAGE.END_OF_LIST}
+          {!isFetching && items.length > 0 && !hasNext && UI_MESSAGE.END_OF_LIST}
         </div>
       </main>
     </PageShell>
