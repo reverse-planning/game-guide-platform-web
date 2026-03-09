@@ -99,10 +99,19 @@ apiClient.interceptors.response.use(
     // 401 처리
     if (status === 401 && originalRequest) {
       const url = originalRequest.url ?? "";
+      const method = (originalRequest.method ?? "get").toLowerCase();
+
       const isReissueRequest = url.includes("/api/reissue");
+      const isCreateSessionRequest = url.includes("/api/session") && method === "post";
+      const isDeleteSessionRequest = url.includes("/api/session") && method === "delete";
 
       // 재발급 자체가 실패했거나 이미 재시도한 요청이면 종료
-      if (isReissueRequest || originalRequest._retry) {
+      if (
+        isReissueRequest ||
+        isCreateSessionRequest ||
+        isDeleteSessionRequest ||
+        originalRequest._retry
+      ) {
         resetAuthState();
         return Promise.reject(new AppError("UNAUTHORIZED", "UNAUTHORIZED", 401));
       }
