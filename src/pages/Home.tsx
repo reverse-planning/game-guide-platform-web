@@ -4,12 +4,11 @@ import { useLocation, useNavigate } from "react-router";
 import { useSessionStore } from "@/stores/sessionSlice";
 import { createSession, CreateSessionError } from "@/services/sessionService";
 import { CREATE_SESSION_ERROR_MESSAGE } from "@/constants/errorMessages";
-import { useSessionView } from "@/stores/sessionSelectors";
 import { HeaderShell } from "@/components/shell/HeaderShell";
 import { GnbBrand } from "@/components/gnb/GnbBrand";
-import { GnbAuthStatus } from "@/components/gnb/GnbAuthStatus";
 import { getSafeNext } from "@/routes/utils/safeNext";
 import { UI_MESSAGE } from "@/constants/uiMessages";
+import { GnbGuestStatus } from "@/components/gnb/GnbGuestStatus";
 
 type SubmitStatus = { type: "idle" } | { type: "submitting" } | { type: "error"; message: string };
 
@@ -18,7 +17,6 @@ export default function Home() {
   const location = useLocation();
 
   const { getNicknameHint, setNicknameHint } = useSessionStore();
-  const { isSignedIn: isAuthed } = useSessionView();
 
   const [inputNickname, setInputNickname] = useState(() => getNicknameHint() ?? "");
   const [status, setStatus] = useState<SubmitStatus>({ type: "idle" });
@@ -60,7 +58,7 @@ export default function Home() {
 
   return (
     <div className="min-h-dvh bg-zinc-50">
-      <HeaderShell left={<GnbBrand />} right={<GnbAuthStatus isAuthed={isAuthed} />} />
+      <HeaderShell left={<GnbBrand />} right={<GnbGuestStatus />} />
 
       <main className="flex min-h-[calc(100dvh-64px)] items-center justify-center px-4">
         <form
