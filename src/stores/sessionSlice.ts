@@ -33,7 +33,6 @@ function safeRemove(key: string) {
 
 export const useSessionStore = create<SessionState>((set) => ({
   viewer: null,
-  accessToken: null,
 
   setViewer: (viewer) => set({ viewer }),
   resetSessionCache: () => set({ viewer: null }),
