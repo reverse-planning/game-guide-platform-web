@@ -28,7 +28,7 @@ export async function loginByUi(
   await page.goto("/");
 
   await page.getByLabel("닉네임").fill(nickname);
-  await page.getByRole("button", { name: "로그인" }).click();
+  await page.getByRole("button", { name: "시작하기" }).click();
 
   await expect(page).toHaveURL(redirectPathPattern);
 

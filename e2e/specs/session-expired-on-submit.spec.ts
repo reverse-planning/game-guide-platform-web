@@ -12,7 +12,7 @@ test.describe("session expiration", () => {
 
     await page.goto("/guides/new");
 
-    await expect(page).toHaveURL(/(login|next=)/);
+    await expect(page).toHaveURL(/next=/);
   });
 
   test("세션이 완전히 만료된 상태에서 작성 제출 시 로그인으로 리다이렉트된다", async ({ page }) => {
@@ -29,6 +29,6 @@ test.describe("session expiration", () => {
 
     await page.getByRole("button", { name: "공략 등록" }).click();
 
-    await expect(page).toHaveURL(/(login|next=)/);
+    await expect(page).toHaveURL(/next=/);
   });
 });

@@ -71,7 +71,12 @@ export default function Home() {
           </p>
 
           <div className="mt-4">
+            <label htmlFor="nickname" className="mb-1 block text-sm font-medium">
+              닉네임
+            </label>
             <input
+              id="nickname"
+              name="nickname"
               type="text"
               value={inputNickname}
               onChange={(e) => setInputNickname(e.target.value)}

@@ -185,8 +185,11 @@ export default function GuideEdit() {
 
           <form id={GUIDE_EDIT_FORM_ID} onSubmit={onSubmit} className="mt-6 space-y-4">
             <div>
-              <label className="mb-1 block text-sm font-medium">제목</label>
+              <label htmlFor="guide-edit-title" className="mb-1 block text-sm font-medium">
+                제목
+              </label>
               <input
+                id="guide-edit-title"
                 name="title"
                 type="text"
                 defaultValue={form.title}
@@ -195,8 +198,11 @@ export default function GuideEdit() {
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium">게임</label>
+              <label htmlFor="guide-edit-game" className="mb-1 block text-sm font-medium">
+                게임
+              </label>
               <select
+                id="guide-edit-game"
                 name="game"
                 defaultValue={form.game}
                 className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-zinc-900"
@@ -210,8 +216,11 @@ export default function GuideEdit() {
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium">본문</label>
+              <label htmlFor="guide-edit-body" className="mb-1 block text-sm font-medium">
+                본문
+              </label>
               <textarea
+                id="guide-edit-body"
                 name="body"
                 rows={10}
                 defaultValue={form.body}
