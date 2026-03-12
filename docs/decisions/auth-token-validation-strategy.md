@@ -1,3 +1,5 @@
+왜 LS AT + Cookie RT 구조인지 작성 필요 + 향후 보안 내용 knowledge/token-strategy.md로 이동
+
 # ADR-0003: Token Validation & Session Invalidation Strategy
 
 ## Status

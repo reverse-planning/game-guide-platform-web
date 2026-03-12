@@ -64,8 +64,5 @@ export async function deleteSession(): Promise<void> {
     }
 
     throw err;
-  } finally {
-    clearAccessToken();
-    useSessionStore.getState().resetSessionCache();
   }
 }
