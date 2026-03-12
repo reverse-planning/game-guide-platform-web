@@ -55,7 +55,7 @@ export async function getSession(): Promise<GetSessionResponseDto> {
 
 export async function deleteSession(): Promise<void> {
   try {
-    await apiClient.delete("/api/logout");
+    await apiClient.post("/api/logout");
     clearAccessToken();
     useSessionStore.getState().resetSessionCache();
   } catch (err) {
@@ -64,5 +64,8 @@ export async function deleteSession(): Promise<void> {
     }
 
     throw err;
+  } finally {
+    clearAccessToken();
+    useSessionStore.getState().resetSessionCache();
   }
 }
