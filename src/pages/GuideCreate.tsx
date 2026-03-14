@@ -14,6 +14,8 @@ import { buildLoginUrl } from "@/routes/utils/buildLoginUrl";
 import { UI_MESSAGE } from "@/constants/uiMessages";
 import { AppError } from "@/services/apiClient";
 import { APP_ERROR_MESSAGE } from "@/constants/appErrorMessages";
+import { useAppMessageStore } from "@/stores/appMessageSlice";
+import { APP_MESSAGE_SOURCE, APP_MESSAGE_TYPE } from "@/constants/appMessage";
 
 type SubmitPhase = "idle" | "submitting";
 
@@ -21,9 +23,10 @@ const GUIDE_CREATE_FORM_ID = "guide-create-form";
 
 export default function GuideCreate() {
   const navigate = useNavigate();
+  const { showAppMessage, clearAppMessage } = useAppMessageStore();
 
   const [submitPhase, setSubmitPhase] = useState<SubmitPhase>("idle");
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [formMessage, setFormMessage] = useState<string | null>(null);
 
   const isSubmitting = submitPhase === "submitting";
 
@@ -37,11 +40,12 @@ export default function GuideCreate() {
     const body = String(fd.get("body") ?? "").trim();
 
     if (!title || !game || !body) {
-      setErrorMessage(UI_MESSAGE.REQUIRED_FIELDS);
+      setFormMessage(UI_MESSAGE.REQUIRED_FIELDS);
       return;
     }
 
-    setErrorMessage(null);
+    clearAppMessage();
+    setFormMessage(null);
     setSubmitPhase("submitting");
 
     try {
@@ -55,16 +59,31 @@ export default function GuideCreate() {
       }
 
       if (err instanceof AppError) {
-        setErrorMessage(APP_ERROR_MESSAGE[err.code]);
+        showAppMessage({
+          type: APP_MESSAGE_TYPE.ERROR,
+          source: APP_MESSAGE_SOURCE.API,
+          code: err.code,
+          message: APP_ERROR_MESSAGE[err.code],
+        });
         return;
       }
 
       if (err instanceof CreateGuideError) {
-        setErrorMessage(CREATE_GUIDE_ERROR_MESSAGE[err.code]);
+        showAppMessage({
+          type: APP_MESSAGE_TYPE.ERROR,
+          source: APP_MESSAGE_SOURCE.API,
+          code: err.code,
+          message: CREATE_GUIDE_ERROR_MESSAGE[err.code],
+        });
         return;
       }
 
-      setErrorMessage(CREATE_GUIDE_ERROR_MESSAGE.UNKNOWN);
+      showAppMessage({
+        type: APP_MESSAGE_TYPE.ERROR,
+        source: APP_MESSAGE_SOURCE.API,
+        code: "UNKNOWN",
+        message: CREATE_GUIDE_ERROR_MESSAGE.UNKNOWN,
+      });
     } finally {
       setSubmitPhase("idle");
     }
@@ -136,7 +155,7 @@ export default function GuideCreate() {
               />
             </div>
 
-            {errorMessage && <p className="text-sm text-red-600">{errorMessage}</p>}
+            {formMessage && <p className="text-sm text-red-600">{formMessage}</p>}
           </form>
         </div>
       </main>

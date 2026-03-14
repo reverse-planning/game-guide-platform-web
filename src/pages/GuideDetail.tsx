@@ -19,6 +19,10 @@ import { formatDateToMinute } from "@/utils/formatDate";
 import { useSessionView } from "@/stores/sessionSelectors";
 import { AppError } from "@/services/apiClient";
 import { APP_ERROR_MESSAGE } from "@/constants/appErrorMessages";
+import { useAppMessageStore } from "@/stores/appMessageSlice";
+import { APP_MESSAGE_SOURCE, APP_MESSAGE_TYPE } from "@/constants/appMessage";
+import { ResponseShapeError } from "@/services/responseErrors";
+import { RESPONSE_SHAPE_ERROR_MESSAGE } from "@/constants/responseErrorMessages";
 
 type LoadState =
   | { type: "idle" }
@@ -29,12 +33,12 @@ type LoadState =
 export default function GuideDetail() {
   const navigate = useNavigate();
   const { sessionNickname } = useSessionView();
+  const { showAppMessage, clearAppMessage } = useAppMessageStore();
   const { guideId } = useParams();
   const id = useMemo(() => Number(guideId), [guideId]);
 
   const [state, setState] = useState<LoadState>({ type: "idle" });
   const [pageMessage, setPageMessage] = useState<string | null>(null);
-  const [actionMessage, setActionMessage] = useState<string | null>(null);
 
   const detail = state.type === "success" ? state.data : null;
   const isOwner = detail !== null && sessionNickname !== null && sessionNickname === detail.author;
@@ -49,6 +53,7 @@ export default function GuideDetail() {
         return;
       }
 
+      clearAppMessage();
       setPageMessage(null);
       setState({ type: "loading" });
 
@@ -70,8 +75,16 @@ export default function GuideDetail() {
           return;
         }
 
+        if (err instanceof ResponseShapeError) {
+          setPageMessage(RESPONSE_SHAPE_ERROR_MESSAGE[err.code]);
+          setState({ type: "loadFailed" });
+          return;
+        }
+
         if (err instanceof GuideDetailError) {
           setPageMessage(GUIDE_DETAIL_ERROR_MESSAGE[err.code]);
+          setState({ type: "loadFailed" });
+          return;
         }
 
         setPageMessage(GUIDE_DETAIL_ERROR_MESSAGE.UNKNOWN);
@@ -84,7 +97,7 @@ export default function GuideDetail() {
     return () => {
       ignore = true;
     };
-  }, [id, navigate]);
+  }, [id, navigate, clearAppMessage]);
 
   const onDelete = async () => {
     if (!Number.isInteger(id) || id <= 0) return;
@@ -92,7 +105,7 @@ export default function GuideDetail() {
     const ok = window.confirm("정말 삭제할까요?");
     if (!ok) return;
 
-    setActionMessage(null);
+    clearAppMessage();
 
     try {
       await deleteGuide(id);
@@ -105,16 +118,31 @@ export default function GuideDetail() {
       }
 
       if (err instanceof AppError) {
-        setActionMessage(APP_ERROR_MESSAGE[err.code]);
+        showAppMessage({
+          type: APP_MESSAGE_TYPE.ERROR,
+          source: APP_MESSAGE_SOURCE.API,
+          code: err.code,
+          message: APP_ERROR_MESSAGE[err.code],
+        });
         return;
       }
 
       if (err instanceof DeleteGuideError) {
-        setActionMessage(DELETE_GUIDE_ERROR_MESSAGE[err.code]);
+        showAppMessage({
+          type: APP_MESSAGE_TYPE.ERROR,
+          source: APP_MESSAGE_SOURCE.API,
+          code: err.code,
+          message: DELETE_GUIDE_ERROR_MESSAGE[err.code],
+        });
         return;
       }
 
-      setActionMessage(DELETE_GUIDE_ERROR_MESSAGE.UNKNOWN);
+      showAppMessage({
+        type: APP_MESSAGE_TYPE.ERROR,
+        source: APP_MESSAGE_SOURCE.API,
+        code: "UNKNOWN",
+        message: DELETE_GUIDE_ERROR_MESSAGE.UNKNOWN,
+      });
     }
   };
 
@@ -157,10 +185,6 @@ export default function GuideDetail() {
             <div className="prose prose-zinc mt-6 max-w-none whitespace-pre-wrap text-sm">
               {detail.body}
             </div>
-
-            {actionMessage && (
-              <div className="mt-6 rounded-lg border p-3 text-sm text-red-600">{actionMessage}</div>
-            )}
 
             <div className="mt-6 flex items-center justify-between gap-2">
               <Link

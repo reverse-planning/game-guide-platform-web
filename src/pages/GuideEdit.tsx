@@ -19,6 +19,10 @@ import { UI_MESSAGE } from "@/constants/uiMessages";
 import { ROUTE_MESSAGE } from "@/constants/routeMessages";
 import { APP_ERROR_MESSAGE } from "@/constants/appErrorMessages";
 import { AppError } from "@/services/apiClient";
+import { useAppMessageStore } from "@/stores/appMessageSlice";
+import { APP_MESSAGE_SOURCE, APP_MESSAGE_TYPE } from "@/constants/appMessage";
+import { ResponseShapeError } from "@/services/responseErrors";
+import { RESPONSE_SHAPE_ERROR_MESSAGE } from "@/constants/responseErrorMessages";
 
 export type FormState = {
   title: string;
@@ -34,6 +38,7 @@ const GUIDE_EDIT_FORM_ID = "guide-edit-form";
 
 export default function GuideEdit() {
   const navigate = useNavigate();
+  const { showAppMessage, clearAppMessage } = useAppMessageStore();
 
   const { guideId } = useParams();
   const id = useMemo(() => Number(guideId), [guideId]);
@@ -41,7 +46,6 @@ export default function GuideEdit() {
   const [loadState, setLoadState] = useState<LoadState>({ type: "loading" });
   const [savePhase, setSavePhase] = useState<SavePhase>("idle");
   const [pageMessage, setPageMessage] = useState<string | null>(null);
-  const [bannerMessage, setBannerMessage] = useState<string | null>(null);
 
   useEffect(() => {
     let ignore = false;
@@ -53,8 +57,8 @@ export default function GuideEdit() {
         return;
       }
 
+      clearAppMessage();
       setPageMessage(null);
-      setBannerMessage(null);
       setLoadState({ type: "loading" });
 
       try {
@@ -84,8 +88,16 @@ export default function GuideEdit() {
           return;
         }
 
+        if (err instanceof ResponseShapeError) {
+          setPageMessage(RESPONSE_SHAPE_ERROR_MESSAGE[err.code]);
+          setLoadState({ type: "loadFailed" });
+          return;
+        }
+
         if (err instanceof GuideEditDetailError) {
           setPageMessage(GUIDE_EDIT_DETAIL_ERROR_MESSAGE[err.code]);
+          setLoadState({ type: "loadFailed" });
+          return;
         }
 
         setPageMessage(GUIDE_EDIT_DETAIL_ERROR_MESSAGE.UNKNOWN);
@@ -98,7 +110,7 @@ export default function GuideEdit() {
     return () => {
       ignore = true;
     };
-  }, [id, navigate]);
+  }, [id, navigate, clearAppMessage]);
 
   const onSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -110,38 +122,58 @@ export default function GuideEdit() {
     const body = String(fd.get("body") ?? "").trim();
 
     if (!title || !game || !body) {
-      setBannerMessage(UI_MESSAGE.REQUIRED_FIELDS);
+      showAppMessage({
+        type: APP_MESSAGE_TYPE.ERROR,
+        source: APP_MESSAGE_SOURCE.UI,
+        code: "REQUIRED_FIELDS",
+        message: UI_MESSAGE.REQUIRED_FIELDS,
+      });
       return;
     }
 
     const nextForm: FormState = { title, game, body };
 
-    setBannerMessage(null);
+    clearAppMessage();
     setSavePhase("saving");
 
     try {
       await updateGuide(id, nextForm);
       navigate(`/guides/${id}`, { replace: true });
     } catch (err) {
+      setLoadState({ type: "ready", form: nextForm });
+
       // ✅ 세션 누락: 홈으로 보내고 next로 복귀 가능하게
       if (err instanceof AuthRequiredError) {
         navigate(buildLoginUrl(window.location.href), { replace: true });
         return;
       }
 
-      setLoadState({ type: "ready", form: nextForm });
-
       if (err instanceof AppError) {
-        setBannerMessage(APP_ERROR_MESSAGE[err.code]);
+        showAppMessage({
+          type: APP_MESSAGE_TYPE.ERROR,
+          source: APP_MESSAGE_SOURCE.API,
+          code: err.code,
+          message: APP_ERROR_MESSAGE[err.code],
+        });
         return;
       }
 
       if (err instanceof UpdateGuideError) {
-        setBannerMessage(UPDATE_GUIDE_ERROR_MESSAGE[err.code]);
+        showAppMessage({
+          type: APP_MESSAGE_TYPE.ERROR,
+          source: APP_MESSAGE_SOURCE.API,
+          code: err.code,
+          message: UPDATE_GUIDE_ERROR_MESSAGE[err.code],
+        });
         return;
       }
 
-      setBannerMessage(APP_ERROR_MESSAGE.UNKNOWN);
+      showAppMessage({
+        type: APP_MESSAGE_TYPE.ERROR,
+        source: APP_MESSAGE_SOURCE.API,
+        code: "UNKNOWN",
+        message: APP_ERROR_MESSAGE.UNKNOWN,
+      });
     } finally {
       setSavePhase("idle");
     }
@@ -176,7 +208,9 @@ export default function GuideEdit() {
         left={<GnbBrand />}
         right={
           <div className="flex items-center gap-2">
-            <ActionSecondaryLink to={`/guides/${id}`}>취소</ActionSecondaryLink>
+            <ActionSecondaryLink to={`/guides/${id}`} disabled={isSaving}>
+              취소
+            </ActionSecondaryLink>
             <ActionPrimaryButton type="submit" form={GUIDE_EDIT_FORM_ID} loading={isSaving}>
               저장
             </ActionPrimaryButton>
@@ -188,10 +222,6 @@ export default function GuideEdit() {
         <div className="rounded-xl border bg-white p-6 shadow-sm">
           <h1 className="text-xl font-semibold">공략 수정</h1>
           <p className="mt-1 text-sm text-zinc-600">내용을 수정한 뒤 저장하세요.</p>
-
-          {bannerMessage && (
-            <div className="mt-4 rounded-lg border p-3 text-sm text-red-600">{bannerMessage}</div>
-          )}
 
           <form id={GUIDE_EDIT_FORM_ID} onSubmit={onSubmit} className="mt-6 space-y-4">
             <div>

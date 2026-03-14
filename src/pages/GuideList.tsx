@@ -18,6 +18,10 @@ import { AuthRequiredError } from "@/services/authErrors";
 import { buildLoginUrl } from "@/routes/utils/buildLoginUrl";
 import { APP_ERROR_MESSAGE } from "@/constants/appErrorMessages";
 import { deleteSession } from "@/services/sessionService";
+import { useAppMessageStore } from "@/stores/appMessageSlice";
+import { APP_MESSAGE_SOURCE, APP_MESSAGE_TYPE } from "@/constants/appMessage";
+import { ResponseShapeError } from "@/services/responseErrors";
+import { RESPONSE_SHAPE_ERROR_MESSAGE } from "@/constants/responseErrorMessages";
 
 type ListFetchPhase = "idle" | "fetching";
 type LogoutPhase = "idle" | "submitting";
@@ -35,6 +39,7 @@ const SORT_OPTIONS: Array<{ label: string; value: GuideListSort }> = [
 export default function GuideList() {
   const navigate = useNavigate();
   const { sessionNickname } = useSessionView();
+  const { showAppMessage, clearAppMessage } = useAppMessageStore();
 
   // ✅ 입력 표시용(조합 중에도 바뀜)
   const [query, setQuery] = useState("");
@@ -52,7 +57,6 @@ export default function GuideList() {
 
   const [fetchPhase, setFetchPhase] = useState<ListFetchPhase>("idle");
   const [logoutPhase, setLogoutPhase] = useState<LogoutPhase>("idle");
-  const [bannerMessage, setBannerMessage] = useState<string | null>(null);
 
   const isFetching = fetchPhase === "fetching";
   const isLoggingOut = logoutPhase === "submitting";
@@ -109,7 +113,7 @@ export default function GuideList() {
     let ignore = false;
 
     async function init() {
-      setBannerMessage(null);
+      clearAppMessage();
       setFetchPhase("fetching");
 
       try {
@@ -127,20 +131,45 @@ export default function GuideList() {
           return;
         }
 
+        setItems([]);
+        setHasNext(false);
+
         if (err instanceof AppError) {
-          setBannerMessage(APP_ERROR_MESSAGE[err.code]);
-          setItems([]);
-          setHasNext(false);
+          showAppMessage({
+            type: APP_MESSAGE_TYPE.ERROR,
+            source: APP_MESSAGE_SOURCE.API,
+            code: err.code,
+            message: APP_ERROR_MESSAGE[err.code],
+          });
+          return;
+        }
+
+        if (err instanceof ResponseShapeError) {
+          showAppMessage({
+            type: APP_MESSAGE_TYPE.ERROR,
+            source: APP_MESSAGE_SOURCE.API,
+            code: err.code,
+            message: RESPONSE_SHAPE_ERROR_MESSAGE[err.code],
+          });
           return;
         }
 
         if (err instanceof ListGuidesError) {
-          setBannerMessage(LIST_GUIDES_ERROR_MESSAGE[err.code]);
+          showAppMessage({
+            type: APP_MESSAGE_TYPE.ERROR,
+            source: APP_MESSAGE_SOURCE.API,
+            code: err.code,
+            message: LIST_GUIDES_ERROR_MESSAGE[err.code],
+          });
+          return;
         }
 
-        setBannerMessage(LIST_GUIDES_ERROR_MESSAGE.UNKNOWN);
-        setItems([]);
-        setHasNext(false);
+        showAppMessage({
+          type: APP_MESSAGE_TYPE.ERROR,
+          source: APP_MESSAGE_SOURCE.API,
+          code: "UNKNOWN",
+          message: LIST_GUIDES_ERROR_MESSAGE.UNKNOWN,
+        });
       } finally {
         if (!ignore) {
           setFetchPhase("idle");
@@ -153,12 +182,12 @@ export default function GuideList() {
     return () => {
       ignore = true;
     };
-  }, [effectiveQuery, sort, navigate]);
+  }, [effectiveQuery, sort, navigate, clearAppMessage, showAppMessage]);
 
   const loadMore = useCallback(async () => {
     if (fetchPhaseRef.current === "fetching" || !hasNextRef.current) return;
 
-    setBannerMessage(null);
+    clearAppMessage();
     setFetchPhase("fetching");
 
     try {
@@ -182,24 +211,50 @@ export default function GuideList() {
       }
 
       if (err instanceof AppError) {
-        setBannerMessage(APP_ERROR_MESSAGE[err.code]);
+        showAppMessage({
+          type: APP_MESSAGE_TYPE.ERROR,
+          source: APP_MESSAGE_SOURCE.API,
+          code: err.code,
+          message: APP_ERROR_MESSAGE[err.code],
+        });
+        return;
+      }
+
+      if (err instanceof ResponseShapeError) {
+        showAppMessage({
+          type: APP_MESSAGE_TYPE.ERROR,
+          source: APP_MESSAGE_SOURCE.API,
+          code: err.code,
+          message: RESPONSE_SHAPE_ERROR_MESSAGE[err.code],
+        });
         return;
       }
 
       if (err instanceof ListGuidesError) {
-        setBannerMessage(LIST_GUIDES_ERROR_MESSAGE[err.code]);
+        showAppMessage({
+          type: APP_MESSAGE_TYPE.ERROR,
+          source: APP_MESSAGE_SOURCE.API,
+          code: err.code,
+          message: LIST_GUIDES_ERROR_MESSAGE[err.code],
+        });
+        return;
       }
 
-      setBannerMessage(UI_MESSAGE.LOAD_MORE_FAILED);
+      showAppMessage({
+        type: APP_MESSAGE_TYPE.ERROR,
+        source: APP_MESSAGE_SOURCE.API,
+        code: "LOAD_MORE_FAILED",
+        message: UI_MESSAGE.LOAD_MORE_FAILED,
+      });
     } finally {
       setFetchPhase("idle");
     }
-  }, [navigate]);
+  }, [navigate, clearAppMessage, showAppMessage]);
 
   const onLogout = useCallback(async () => {
     if (logoutPhase === "submitting") return;
 
-    setBannerMessage(null);
+    clearAppMessage();
     setLogoutPhase("submitting");
 
     try {
@@ -212,15 +267,25 @@ export default function GuideList() {
       }
 
       if (err instanceof AppError) {
-        setBannerMessage(APP_ERROR_MESSAGE[err.code]);
+        showAppMessage({
+          type: APP_MESSAGE_TYPE.ERROR,
+          source: APP_MESSAGE_SOURCE.AUTH,
+          code: err.code,
+          message: APP_ERROR_MESSAGE[err.code],
+        });
         return;
       }
 
-      setBannerMessage(APP_ERROR_MESSAGE.UNKNOWN);
+      showAppMessage({
+        type: APP_MESSAGE_TYPE.ERROR,
+        source: APP_MESSAGE_SOURCE.AUTH,
+        code: "UNKNOWN",
+        message: APP_ERROR_MESSAGE.UNKNOWN,
+      });
     } finally {
       setLogoutPhase("idle");
     }
-  }, [logoutPhase, navigate]);
+  }, [logoutPhase, navigate, clearAppMessage, showAppMessage]);
 
   // ✅ 무한 스크롤: IntersectionObserver (관찰만, 데이터는 service가 담당)
   useEffect(() => {
@@ -281,12 +346,6 @@ export default function GuideList() {
       />
 
       <main className="mx-auto max-w-6xl p-4">
-        {bannerMessage && (
-          <div className="mb-4 rounded-xl border bg-white p-3 text-sm text-red-600">
-            {bannerMessage}
-          </div>
-        )}
-
         {/* ✅ Sticky 상단 띠: 정렬/필터 + 글쓰기 버튼 */}
         {/* HeaderShell이 fixed/sticky 라면 top 값을 높이에 맞게 조정 (예: top-16) */}
         <div className="sticky top-16 z-10 mb-4 rounded-xl border bg-white/95 p-3 backdrop-blur">

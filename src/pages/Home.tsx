@@ -11,6 +11,8 @@ import { UI_MESSAGE } from "@/constants/uiMessages";
 import { GnbGuestStatus } from "@/components/gnb/GnbGuestStatus";
 import { AppError } from "@/services/apiClient";
 import { APP_ERROR_MESSAGE } from "@/constants/appErrorMessages";
+import { useAppMessageStore } from "@/stores/appMessageSlice";
+import { APP_MESSAGE_SOURCE, APP_MESSAGE_TYPE } from "@/constants/appMessage";
 
 type SubmitPhase = "idle" | "submitting";
 
@@ -19,10 +21,10 @@ export default function Home() {
   const location = useLocation();
 
   const { getNicknameHint, setNicknameHint } = useSessionStore();
+  const { showAppMessage, clearAppMessage } = useAppMessageStore();
 
   const [inputNickname, setInputNickname] = useState(() => getNicknameHint() ?? "");
   const [submitPhase, setSubmitPhase] = useState<SubmitPhase>("idle");
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const isSubmitting = submitPhase === "submitting";
 
@@ -34,7 +36,7 @@ export default function Home() {
     const name = inputNickname.trim();
     if (!name) return;
 
-    setErrorMessage(null);
+    clearAppMessage();
     setSubmitPhase("submitting");
 
     try {
@@ -48,16 +50,31 @@ export default function Home() {
       navigate(getSafeNext(next), { replace: true });
     } catch (err) {
       if (err instanceof AppError) {
-        setErrorMessage(APP_ERROR_MESSAGE[err.code]);
+        showAppMessage({
+          type: APP_MESSAGE_TYPE.ERROR,
+          source: APP_MESSAGE_SOURCE.API,
+          code: err.code,
+          message: APP_ERROR_MESSAGE[err.code],
+        });
         return;
       }
 
       if (err instanceof CreateSessionError) {
-        setErrorMessage(CREATE_SESSION_ERROR_MESSAGE[err.code]);
+        showAppMessage({
+          type: APP_MESSAGE_TYPE.ERROR,
+          source: APP_MESSAGE_SOURCE.API,
+          code: err.code,
+          message: CREATE_SESSION_ERROR_MESSAGE[err.code],
+        });
         return;
       }
 
-      setErrorMessage(CREATE_SESSION_ERROR_MESSAGE.UNKNOWN);
+      showAppMessage({
+        type: APP_MESSAGE_TYPE.ERROR,
+        source: APP_MESSAGE_SOURCE.API,
+        code: "UNKNOWN",
+        message: CREATE_SESSION_ERROR_MESSAGE.UNKNOWN,
+      });
     } finally {
       setSubmitPhase("idle");
     }
@@ -91,8 +108,6 @@ export default function Home() {
               className="w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900"
             />
           </div>
-
-          {errorMessage && <p className="mt-3 text-sm text-red-600">{errorMessage}</p>}
 
           <button
             type="submit"

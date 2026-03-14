@@ -7,6 +7,7 @@ import GuideDetail from "@/pages/GuideDetail.tsx";
 import GuideEdit from "@/pages/GuideEdit.tsx";
 import { redirectToLogin } from "./utils/redirectToLogin";
 import { getAccessToken } from "@/services/tokenStorage";
+import { GlobalBanner } from "@/components/feedback/GlobalBanner";
 
 function redirectAuthedHome() {
   const accessToken = getAccessToken();
@@ -22,24 +23,38 @@ function requireSession({ request }: { request: Request }) {
   throw redirectToLogin(request.url);
 }
 
+function RootLayout() {
+  return (
+    <>
+      <GlobalBanner />
+      <Outlet />
+    </>
+  );
+}
+
 function ProtectedLayout() {
   return <Outlet />;
 }
 
 export const router = createBrowserRouter([
-  { path: "/", loader: redirectAuthedHome, element: <Home /> },
-
   {
-    path: "/guides",
-    loader: requireSession,
-    element: <ProtectedLayout />,
+    element: <RootLayout />,
     children: [
-      { index: true, element: <GuideList /> },
-      { path: "new", element: <GuideCreate /> },
-      { path: ":guideId", element: <GuideDetail /> },
-      { path: ":guideId/edit", element: <GuideEdit /> },
+      { path: "/", loader: redirectAuthedHome, element: <Home /> },
+
+      {
+        path: "/guides",
+        loader: requireSession,
+        element: <ProtectedLayout />,
+        children: [
+          { index: true, element: <GuideList /> },
+          { path: "new", element: <GuideCreate /> },
+          { path: ":guideId", element: <GuideDetail /> },
+          { path: ":guideId/edit", element: <GuideEdit /> },
+        ],
+      },
+
+      { path: "*", element: <NotFound /> },
     ],
   },
-
-  { path: "*", element: <NotFound /> },
 ]);
