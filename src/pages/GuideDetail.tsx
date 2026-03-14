@@ -24,17 +24,17 @@ type LoadState =
   | { type: "idle" }
   | { type: "loading" }
   | { type: "success"; data: GuideDetailType }
-  | { type: "error"; message: string };
+  | { type: "loadFailed" };
 
 export default function GuideDetail() {
   const navigate = useNavigate();
-  const { guideId } = useParams();
   const { sessionNickname } = useSessionView();
-
+  const { guideId } = useParams();
   const id = useMemo(() => Number(guideId), [guideId]);
 
   const [state, setState] = useState<LoadState>({ type: "idle" });
-  const [actionError, setActionError] = useState<string | null>(null);
+  const [pageMessage, setPageMessage] = useState<string | null>(null);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
 
   const detail = state.type === "success" ? state.data : null;
   const isOwner = detail !== null && sessionNickname !== null && sessionNickname === detail.author;
@@ -44,11 +44,14 @@ export default function GuideDetail() {
 
     async function run() {
       if (!Number.isInteger(id) || id <= 0) {
-        setState({ type: "error", message: ROUTE_MESSAGE.INVALID_GUIDE_ID });
+        setPageMessage(ROUTE_MESSAGE.INVALID_GUIDE_ID);
+        setState({ type: "loadFailed" });
         return;
       }
 
+      setPageMessage(null);
       setState({ type: "loading" });
+
       try {
         const data = await getGuideDetail(id);
         if (ignore) return;
@@ -62,20 +65,22 @@ export default function GuideDetail() {
         }
 
         if (err instanceof AppError) {
-          setState({ type: "error", message: APP_ERROR_MESSAGE[err.code] });
+          setPageMessage(APP_ERROR_MESSAGE[err.code]);
+          setState({ type: "loadFailed" });
           return;
         }
 
         if (err instanceof GuideDetailError) {
-          setState({ type: "error", message: GUIDE_DETAIL_ERROR_MESSAGE[err.code] });
-          return;
+          setPageMessage(GUIDE_DETAIL_ERROR_MESSAGE[err.code]);
         }
 
-        setState({ type: "error", message: GUIDE_DETAIL_ERROR_MESSAGE.UNKNOWN });
+        setPageMessage(GUIDE_DETAIL_ERROR_MESSAGE.UNKNOWN);
+        setState({ type: "loadFailed" });
       }
     }
 
     run();
+
     return () => {
       ignore = true;
     };
@@ -87,7 +92,8 @@ export default function GuideDetail() {
     const ok = window.confirm("정말 삭제할까요?");
     if (!ok) return;
 
-    setActionError(null);
+    setActionMessage(null);
+
     try {
       await deleteGuide(id);
       navigate("/guides", { replace: true });
@@ -99,22 +105,22 @@ export default function GuideDetail() {
       }
 
       if (err instanceof AppError) {
-        setActionError(APP_ERROR_MESSAGE[err.code]);
+        setActionMessage(APP_ERROR_MESSAGE[err.code]);
         return;
       }
 
       if (err instanceof DeleteGuideError) {
-        setActionError(DELETE_GUIDE_ERROR_MESSAGE[err.code]);
+        setActionMessage(DELETE_GUIDE_ERROR_MESSAGE[err.code]);
         return;
       }
 
-      setActionError(DELETE_GUIDE_ERROR_MESSAGE.UNKNOWN);
+      setActionMessage(DELETE_GUIDE_ERROR_MESSAGE.UNKNOWN);
     }
   };
 
   const content = (() => {
-    if (state.type === "loading" || state.type === "idle") return UI_MESSAGE.FETCHING;
-    if (state.type === "error") return state.message;
+    if (state.type === "idle" || state.type === "loading") return UI_MESSAGE.FETCHING;
+    if (state.type === "loadFailed") return pageMessage;
     return null;
   })();
 
@@ -152,8 +158,8 @@ export default function GuideDetail() {
               {detail.body}
             </div>
 
-            {actionError && (
-              <div className="mt-6 rounded-lg border p-3 text-sm text-red-600">{actionError}</div>
+            {actionMessage && (
+              <div className="mt-6 rounded-lg border p-3 text-sm text-red-600">{actionMessage}</div>
             )}
 
             <div className="mt-6 flex items-center justify-between gap-2">

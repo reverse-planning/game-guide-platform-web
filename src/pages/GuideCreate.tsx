@@ -15,19 +15,19 @@ import { UI_MESSAGE } from "@/constants/uiMessages";
 import { AppError } from "@/services/apiClient";
 import { APP_ERROR_MESSAGE } from "@/constants/appErrorMessages";
 
-type SubmitStatus = { type: "idle" } | { type: "submitting" } | { type: "error"; message: string };
+type SubmitPhase = "idle" | "submitting";
 
 const GUIDE_CREATE_FORM_ID = "guide-create-form";
 
 export default function GuideCreate() {
   const navigate = useNavigate();
 
-  const [status, setStatus] = useState<SubmitStatus>({ type: "idle" });
+  const [submitPhase, setSubmitPhase] = useState<SubmitPhase>("idle");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const isSubmitting = status.type === "submitting";
-  const errorMessage = status.type === "error" ? status.message : null;
+  const isSubmitting = submitPhase === "submitting";
 
-  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const onSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (isSubmitting) return;
 
@@ -37,11 +37,12 @@ export default function GuideCreate() {
     const body = String(fd.get("body") ?? "").trim();
 
     if (!title || !game || !body) {
-      setStatus({ type: "error", message: UI_MESSAGE.REQUIRED_FIELDS });
+      setErrorMessage(UI_MESSAGE.REQUIRED_FIELDS);
       return;
     }
 
-    setStatus({ type: "submitting" });
+    setErrorMessage(null);
+    setSubmitPhase("submitting");
 
     try {
       await createGuide({ title, game, body });
@@ -54,18 +55,18 @@ export default function GuideCreate() {
       }
 
       if (err instanceof AppError) {
-        setStatus({ type: "error", message: APP_ERROR_MESSAGE[err.code] });
+        setErrorMessage(APP_ERROR_MESSAGE[err.code]);
         return;
       }
 
       if (err instanceof CreateGuideError) {
-        setStatus({ type: "error", message: CREATE_GUIDE_ERROR_MESSAGE[err.code] });
+        setErrorMessage(CREATE_GUIDE_ERROR_MESSAGE[err.code]);
         return;
       }
 
-      setStatus({ type: "error", message: CREATE_GUIDE_ERROR_MESSAGE.UNKNOWN });
+      setErrorMessage(CREATE_GUIDE_ERROR_MESSAGE.UNKNOWN);
     } finally {
-      setStatus((prev) => (prev.type === "submitting" ? { type: "idle" } : prev));
+      setSubmitPhase("idle");
     }
   };
 

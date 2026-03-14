@@ -26,11 +26,9 @@ export type FormState = {
   body: string;
 };
 
-type PageState =
-  | { type: "loading" }
-  | { type: "ready"; form: FormState }
-  | { type: "saving"; form: FormState }
-  | { type: "error"; message: string };
+type LoadState = { type: "loading" } | { type: "ready"; form: FormState } | { type: "loadFailed" };
+
+type SavePhase = "idle" | "saving";
 
 const GUIDE_EDIT_FORM_ID = "guide-edit-form";
 
@@ -40,23 +38,30 @@ export default function GuideEdit() {
   const { guideId } = useParams();
   const id = useMemo(() => Number(guideId), [guideId]);
 
-  const [state, setState] = useState<PageState>({ type: "loading" });
-  const [banner, setBanner] = useState<string | null>(null);
+  const [loadState, setLoadState] = useState<LoadState>({ type: "loading" });
+  const [savePhase, setSavePhase] = useState<SavePhase>("idle");
+  const [pageMessage, setPageMessage] = useState<string | null>(null);
+  const [bannerMessage, setBannerMessage] = useState<string | null>(null);
 
   useEffect(() => {
     let ignore = false;
 
     async function run() {
       if (!Number.isInteger(id) || id <= 0) {
-        setState({ type: "error", message: ROUTE_MESSAGE.INVALID_GUIDE_ID });
+        setPageMessage(ROUTE_MESSAGE.INVALID_GUIDE_ID);
+        setLoadState({ type: "loadFailed" });
         return;
       }
 
-      setState({ type: "loading" });
+      setPageMessage(null);
+      setBannerMessage(null);
+      setLoadState({ type: "loading" });
+
       try {
         const data = await getGuideEditDetail(id);
         if (ignore) return;
-        setState({
+
+        setLoadState({
           type: "ready",
           form: {
             title: data.title,
@@ -72,31 +77,32 @@ export default function GuideEdit() {
           navigate(buildLoginUrl(window.location.href), { replace: true });
           return;
         }
+
         if (err instanceof AppError) {
-          // NETWORK / SERVER / UNKNOWN
-          setState({ type: "error", message: APP_ERROR_MESSAGE[err.code] });
-          setBanner(APP_ERROR_MESSAGE[err.code]);
+          setPageMessage(APP_ERROR_MESSAGE[err.code]);
+          setLoadState({ type: "loadFailed" });
           return;
         }
+
         if (err instanceof GuideEditDetailError) {
-          setState({ type: "error", message: GUIDE_EDIT_DETAIL_ERROR_MESSAGE[err.code] });
-        } else {
-          setState({ type: "error", message: GUIDE_EDIT_DETAIL_ERROR_MESSAGE.UNKNOWN });
+          setPageMessage(GUIDE_EDIT_DETAIL_ERROR_MESSAGE[err.code]);
         }
+
+        setPageMessage(GUIDE_EDIT_DETAIL_ERROR_MESSAGE.UNKNOWN);
+        setLoadState({ type: "loadFailed" });
       }
     }
 
     run();
+
     return () => {
       ignore = true;
     };
   }, [id, navigate]);
 
-  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const onSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (state.type !== "ready") return;
-
-    setBanner(null);
+    if (loadState.type !== "ready" || savePhase === "saving") return;
 
     const fd = new FormData(e.currentTarget);
     const title = String(fd.get("title") ?? "").trim();
@@ -104,12 +110,14 @@ export default function GuideEdit() {
     const body = String(fd.get("body") ?? "").trim();
 
     if (!title || !game || !body) {
-      setBanner(UI_MESSAGE.REQUIRED_FIELDS);
+      setBannerMessage(UI_MESSAGE.REQUIRED_FIELDS);
       return;
     }
 
-    const nextForm = { title, game, body };
-    setState({ type: "saving", form: nextForm });
+    const nextForm: FormState = { title, game, body };
+
+    setBannerMessage(null);
+    setSavePhase("saving");
 
     try {
       await updateGuide(id, nextForm);
@@ -121,44 +129,46 @@ export default function GuideEdit() {
         return;
       }
 
+      setLoadState({ type: "ready", form: nextForm });
+
       if (err instanceof AppError) {
-        setState({ type: "ready", form: nextForm });
-        setBanner(APP_ERROR_MESSAGE[err.code]);
+        setBannerMessage(APP_ERROR_MESSAGE[err.code]);
         return;
       }
 
       if (err instanceof UpdateGuideError) {
-        setBanner(UPDATE_GUIDE_ERROR_MESSAGE[err.code]);
+        setBannerMessage(UPDATE_GUIDE_ERROR_MESSAGE[err.code]);
         return;
       }
 
-      setState({ type: "ready", form: nextForm });
-      setBanner(APP_ERROR_MESSAGE.UNKNOWN);
+      setBannerMessage(APP_ERROR_MESSAGE.UNKNOWN);
+    } finally {
+      setSavePhase("idle");
     }
   };
 
-  if (state.type === "loading") {
+  if (loadState.type === "loading") {
     return (
       <div className="min-h-dvh bg-zinc-50 p-4">
-        <div className="mx-auto max-w-3xl rounded-xl border bg-white p-6 shadow-sm text-sm">
+        <div className="mx-auto max-w-3xl rounded-xl border bg-white p-6 text-sm shadow-sm ">
           {UI_MESSAGE.FETCHING}
         </div>
       </div>
     );
   }
 
-  if (state.type === "error") {
+  if (loadState.type === "loadFailed") {
     return (
       <div className="min-h-dvh bg-zinc-50 p-4">
-        <div className="mx-auto max-w-3xl rounded-xl border bg-white p-6 shadow-sm text-sm">
-          {state.message}
+        <div className="mx-auto max-w-3xl rounded-xl border bg-white p-6 text-sm shadow-sm ">
+          {pageMessage}
         </div>
       </div>
     );
   }
 
-  const form = state.form;
-  const isSaving = state.type === "saving";
+  const form = loadState.form;
+  const isSaving = savePhase === "saving";
 
   return (
     <PageShell>
@@ -179,8 +189,8 @@ export default function GuideEdit() {
           <h1 className="text-xl font-semibold">공략 수정</h1>
           <p className="mt-1 text-sm text-zinc-600">내용을 수정한 뒤 저장하세요.</p>
 
-          {banner && (
-            <div className="mt-4 rounded-lg border p-3 text-sm text-red-600">{banner}</div>
+          {bannerMessage && (
+            <div className="mt-4 rounded-lg border p-3 text-sm text-red-600">{bannerMessage}</div>
           )}
 
           <form id={GUIDE_EDIT_FORM_ID} onSubmit={onSubmit} className="mt-6 space-y-4">

@@ -9,8 +9,10 @@ import { GnbBrand } from "@/components/gnb/GnbBrand";
 import { getSafeNext } from "@/routes/utils/safeNext";
 import { UI_MESSAGE } from "@/constants/uiMessages";
 import { GnbGuestStatus } from "@/components/gnb/GnbGuestStatus";
+import { AppError } from "@/services/apiClient";
+import { APP_ERROR_MESSAGE } from "@/constants/appErrorMessages";
 
-type SubmitStatus = { type: "idle" } | { type: "submitting" } | { type: "error"; message: string };
+type SubmitPhase = "idle" | "submitting";
 
 export default function Home() {
   const navigate = useNavigate();
@@ -19,17 +21,21 @@ export default function Home() {
   const { getNicknameHint, setNicknameHint } = useSessionStore();
 
   const [inputNickname, setInputNickname] = useState(() => getNicknameHint() ?? "");
-  const [status, setStatus] = useState<SubmitStatus>({ type: "idle" });
+  const [submitPhase, setSubmitPhase] = useState<SubmitPhase>("idle");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const onSubmit = async (e: React.FormEvent) => {
+  const isSubmitting = submitPhase === "submitting";
+
+  const onSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    if (status.type === "submitting") return;
+    if (isSubmitting) return;
 
     const name = inputNickname.trim();
     if (!name) return;
 
-    setStatus({ type: "submitting" });
+    setErrorMessage(null);
+    setSubmitPhase("submitting");
 
     try {
       const data = await createSession(name);
@@ -41,20 +47,21 @@ export default function Home() {
       const next = params.get("next");
       navigate(getSafeNext(next), { replace: true });
     } catch (err) {
-      if (err instanceof CreateSessionError) {
-        setStatus({ type: "error", message: CREATE_SESSION_ERROR_MESSAGE[err.code] });
-      } else {
-        setStatus({ type: "error", message: CREATE_SESSION_ERROR_MESSAGE.UNKNOWN });
+      if (err instanceof AppError) {
+        setErrorMessage(APP_ERROR_MESSAGE[err.code]);
+        return;
       }
-      return;
+
+      if (err instanceof CreateSessionError) {
+        setErrorMessage(CREATE_SESSION_ERROR_MESSAGE[err.code]);
+        return;
+      }
+
+      setErrorMessage(CREATE_SESSION_ERROR_MESSAGE.UNKNOWN);
     } finally {
-      // ✅ submitting일 때만 idle로 복귀 (error 상태를 지우지 않기)
-      setStatus((prev) => (prev.type === "submitting" ? { type: "idle" } : prev));
+      setSubmitPhase("idle");
     }
   };
-
-  const isSubmitting = status.type === "submitting";
-  const errorMessage = status.type === "error" ? status.message : null;
 
   return (
     <div className="min-h-dvh bg-zinc-50">

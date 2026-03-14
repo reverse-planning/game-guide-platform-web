@@ -19,6 +19,9 @@ import { buildLoginUrl } from "@/routes/utils/buildLoginUrl";
 import { APP_ERROR_MESSAGE } from "@/constants/appErrorMessages";
 import { deleteSession } from "@/services/sessionService";
 
+type ListFetchPhase = "idle" | "fetching";
+type LogoutPhase = "idle" | "submitting";
+
 const PAGE_SIZE = 20;
 const DEFAULT_SORT = "updatedAt,desc";
 const ROOT_MARGIN = "200px";
@@ -31,7 +34,6 @@ const SORT_OPTIONS: Array<{ label: string; value: GuideListSort }> = [
 
 export default function GuideList() {
   const navigate = useNavigate();
-
   const { sessionNickname } = useSessionView();
 
   // ✅ 입력 표시용(조합 중에도 바뀜)
@@ -46,19 +48,22 @@ export default function GuideList() {
 
   const [items, setItems] = useState<GuideListItem[]>([]);
   const [page, setPage] = useState(0);
-  const [isFetching, setIsFetching] = useState(false);
   const [hasNext, setHasNext] = useState(true);
-  const [errorBanner, setErrorBanner] = useState<string | null>(null);
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const [fetchPhase, setFetchPhase] = useState<ListFetchPhase>("idle");
+  const [logoutPhase, setLogoutPhase] = useState<LogoutPhase>("idle");
+  const [bannerMessage, setBannerMessage] = useState<string | null>(null);
+
+  const isFetching = fetchPhase === "fetching";
+  const isLoggingOut = logoutPhase === "submitting";
 
   const sentinelRef = useRef<HTMLDivElement | null>(null);
-
   // ✅ IME 조합 상태
   const isComposingRef = useRef(false);
 
   // IntersectionObserver에서 최신 상태를 안정적으로 참조하기 위한 ref
   const pageRef = useRef(page);
-  const fetchingRef = useRef(isFetching);
+  const fetchPhaseRef = useRef(fetchPhase);
   const hasNextRef = useRef(hasNext);
   const effectiveQueryRef = useRef(effectiveQuery);
   const sortRef = useRef<GuideListSort>(sort);
@@ -66,8 +71,8 @@ export default function GuideList() {
     pageRef.current = page;
   }, [page]);
   useEffect(() => {
-    fetchingRef.current = isFetching;
-  }, [isFetching]);
+    fetchPhaseRef.current = fetchPhase;
+  }, [fetchPhase]);
   useEffect(() => {
     hasNextRef.current = hasNext;
   }, [hasNext]);
@@ -104,8 +109,8 @@ export default function GuideList() {
     let ignore = false;
 
     async function init() {
-      setErrorBanner(null);
-      setIsFetching(true);
+      setBannerMessage(null);
+      setFetchPhase("fetching");
 
       try {
         const data = await listGuides({ query: effectiveQuery, page: 0, size: PAGE_SIZE, sort });
@@ -123,36 +128,39 @@ export default function GuideList() {
         }
 
         if (err instanceof AppError) {
-          setErrorBanner(APP_ERROR_MESSAGE[err.code]);
+          setBannerMessage(APP_ERROR_MESSAGE[err.code]);
           setItems([]);
           setHasNext(false);
           return;
         }
 
         if (err instanceof ListGuidesError) {
-          setErrorBanner(LIST_GUIDES_ERROR_MESSAGE[err.code]);
-        } else {
-          setErrorBanner(LIST_GUIDES_ERROR_MESSAGE.UNKNOWN);
+          setBannerMessage(LIST_GUIDES_ERROR_MESSAGE[err.code]);
         }
 
+        setBannerMessage(LIST_GUIDES_ERROR_MESSAGE.UNKNOWN);
         setItems([]);
         setHasNext(false);
       } finally {
-        if (!ignore) setIsFetching(false);
+        if (!ignore) {
+          setFetchPhase("idle");
+        }
       }
     }
 
     init();
+
     return () => {
       ignore = true;
     };
   }, [effectiveQuery, sort, navigate]);
 
   const loadMore = useCallback(async () => {
-    if (fetchingRef.current || !hasNextRef.current) return;
+    if (fetchPhaseRef.current === "fetching" || !hasNextRef.current) return;
 
-    setErrorBanner(null);
-    setIsFetching(true);
+    setBannerMessage(null);
+    setFetchPhase("fetching");
+
     try {
       const nextPage = pageRef.current + 1;
 
@@ -174,25 +182,25 @@ export default function GuideList() {
       }
 
       if (err instanceof AppError) {
-        setErrorBanner(APP_ERROR_MESSAGE[err.code]);
+        setBannerMessage(APP_ERROR_MESSAGE[err.code]);
         return;
       }
 
       if (err instanceof ListGuidesError) {
-        setErrorBanner(LIST_GUIDES_ERROR_MESSAGE[err.code]);
-      } else {
-        setErrorBanner(UI_MESSAGE.LOAD_MORE_FAILED);
+        setBannerMessage(LIST_GUIDES_ERROR_MESSAGE[err.code]);
       }
+
+      setBannerMessage(UI_MESSAGE.LOAD_MORE_FAILED);
     } finally {
-      setIsFetching(false);
+      setFetchPhase("idle");
     }
   }, [navigate]);
 
   const onLogout = useCallback(async () => {
-    if (isLoggingOut) return;
+    if (logoutPhase === "submitting") return;
 
-    setErrorBanner(null);
-    setIsLoggingOut(true);
+    setBannerMessage(null);
+    setLogoutPhase("submitting");
 
     try {
       await deleteSession();
@@ -204,15 +212,15 @@ export default function GuideList() {
       }
 
       if (err instanceof AppError) {
-        setErrorBanner(APP_ERROR_MESSAGE[err.code]);
+        setBannerMessage(APP_ERROR_MESSAGE[err.code]);
         return;
       }
 
-      setErrorBanner(APP_ERROR_MESSAGE.UNKNOWN);
+      setBannerMessage(APP_ERROR_MESSAGE.UNKNOWN);
     } finally {
-      setIsLoggingOut(false);
+      setLogoutPhase("idle");
     }
-  }, [isLoggingOut, navigate]);
+  }, [logoutPhase, navigate]);
 
   // ✅ 무한 스크롤: IntersectionObserver (관찰만, 데이터는 service가 담당)
   useEffect(() => {
@@ -273,9 +281,9 @@ export default function GuideList() {
       />
 
       <main className="mx-auto max-w-6xl p-4">
-        {errorBanner && (
+        {bannerMessage && (
           <div className="mb-4 rounded-xl border bg-white p-3 text-sm text-red-600">
-            {errorBanner}
+            {bannerMessage}
           </div>
         )}
 
