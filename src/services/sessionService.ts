@@ -5,6 +5,8 @@ import type { CreateSessionResponseDto, GetSessionResponseDto } from "@/types/se
 import { useSessionStore } from "@/stores/sessionSlice";
 import { clearAccessToken, setAccessToken } from "./tokenStorage";
 import { AuthRequiredError } from "./authErrors";
+import { ResponseShapeError } from "./responseErrors";
+import { assertCreateSessionResponse, assertGetSessionResponse } from "@/types/sessionGuards";
 
 export type CreateSessionErrorCode = "NICKNAME_DUPLICATE" | "UNKNOWN";
 
@@ -19,7 +21,8 @@ export class CreateSessionError extends Error {
 
 export async function createSession(nickname: string): Promise<CreateSessionResponseDto> {
   try {
-    const res = await apiClient.post<CreateSessionResponseDto>("/api/session", { nickname });
+    const res = await apiClient.post<unknown>("/api/session", { nickname });
+    assertCreateSessionResponse(res.data);
 
     // AT 저장
     setAccessToken(res.data.accessToken);
@@ -28,6 +31,10 @@ export async function createSession(nickname: string): Promise<CreateSessionResp
     return res.data;
   } catch (err) {
     if (err instanceof AppError) throw err;
+
+    if (err instanceof ResponseShapeError) {
+      throw err;
+    }
 
     if (axios.isAxiosError(err)) {
       if (err.response?.status === 409 && err.response.data?.message === "NICKNAME_DUPLICATE")
@@ -41,12 +48,18 @@ export async function createSession(nickname: string): Promise<CreateSessionResp
 
 export async function getSession(): Promise<GetSessionResponseDto> {
   try {
-    const res = await apiClient.get<GetSessionResponseDto>("/api/session");
+    const res = await apiClient.get<unknown>("/api/session");
+    assertGetSessionResponse(res.data);
+
     useSessionStore.getState().setViewer({ nickname: res.data.nickname });
     return res.data;
   } catch (err) {
     if (err instanceof AppError && err.code === "UNAUTHORIZED") {
       throw new AuthRequiredError();
+    }
+
+    if (err instanceof ResponseShapeError) {
+      throw err;
     }
 
     throw err;

@@ -140,13 +140,13 @@ export default function GuideEdit() {
       await updateGuide(id, nextForm);
       navigate(`/guides/${id}`, { replace: true });
     } catch (err) {
-      setLoadState({ type: "ready", form: nextForm });
-
       // ✅ 세션 누락: 홈으로 보내고 next로 복귀 가능하게
       if (err instanceof AuthRequiredError) {
         navigate(buildLoginUrl(window.location.href), { replace: true });
         return;
       }
+
+      setLoadState({ type: "ready", form: nextForm });
 
       if (err instanceof AppError) {
         showAppMessage({
@@ -154,6 +154,16 @@ export default function GuideEdit() {
           source: APP_MESSAGE_SOURCE.API,
           code: err.code,
           message: APP_ERROR_MESSAGE[err.code],
+        });
+        return;
+      }
+
+      if (err instanceof ResponseShapeError) {
+        showAppMessage({
+          type: APP_MESSAGE_TYPE.ERROR,
+          source: APP_MESSAGE_SOURCE.API,
+          code: err.code,
+          message: RESPONSE_SHAPE_ERROR_MESSAGE[err.code],
         });
         return;
       }

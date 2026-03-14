@@ -4,6 +4,8 @@ import { apiClient, AppError } from "./apiClient";
 import type { UpdateGuideRequestDto, UpdateGuideResponseDto } from "@/types/guide";
 import type { GuideId } from "@/types/id";
 import { AuthRequiredError } from "@/services/authErrors";
+import { ResponseShapeError } from "./responseErrors";
+import { assertUpdateGuideResponse } from "@/types/guideGuards";
 
 export type UpdateGuideErrorCode = "BAD_REQUEST" | "NOT_FOUND" | "UNKNOWN";
 
@@ -23,18 +25,22 @@ export async function updateGuide(
   body: UpdateGuideBody,
 ): Promise<UpdateGuideResponseDto> {
   try {
-    const req: UpdateGuideRequestDto = {
-      ...body,
-    };
+    const req: UpdateGuideRequestDto = { ...body };
 
-    const res = await apiClient.patch<UpdateGuideResponseDto>(`/api/guides/${guideId}`, req);
+    const res = await apiClient.patch<unknown>(`/api/guides/${guideId}`, req);
+    assertUpdateGuideResponse(res.data);
+
     return res.data;
   } catch (err) {
     if (err instanceof AppError) {
       if (err.code === "UNAUTHORIZED") throw new AuthRequiredError();
       throw err;
     }
-    // 4xx 의미 해석
+
+    if (err instanceof ResponseShapeError) {
+      throw err;
+    }
+
     if (axios.isAxiosError(err)) {
       if (err.response?.status === 400) throw new UpdateGuideError("BAD_REQUEST");
       if (err.response?.status === 404) throw new UpdateGuideError("NOT_FOUND");

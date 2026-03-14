@@ -4,6 +4,8 @@ import axios from "axios";
 import type { GuideDetailDto, GuideEditDetailDto } from "@/types/guide";
 import { AuthRequiredError } from "./authErrors";
 import type { GuideId } from "@/types/id";
+import { assertGuideDetailResponse, assertGuideEditDetailResponse } from "@/types/guideGuards";
+import { ResponseShapeError } from "./responseErrors";
 
 export type GuideDetailErrorCode = "NOT_FOUND" | "UNKNOWN";
 
@@ -19,10 +21,16 @@ export class GuideDetailError extends Error {
 export async function getGuideDetail(guideId: number): Promise<GuideDetailDto> {
   try {
     const res = await apiClient.get<GuideDetailDto>(`/api/guides/${guideId}`);
+    assertGuideDetailResponse(res.data);
+
     return res.data;
   } catch (err) {
     if (err instanceof AppError) {
       if (err.code === "UNAUTHORIZED") throw new AuthRequiredError();
+      throw err;
+    }
+
+    if (err instanceof ResponseShapeError) {
       throw err;
     }
 
@@ -49,11 +57,17 @@ export class GuideEditDetailError extends Error {
 
 export async function getGuideEditDetail(guideId: GuideId): Promise<GuideEditDetailDto> {
   try {
-    const res = await apiClient.get<GuideEditDetailDto>(`/api/guides/${guideId}/edit`);
+    const res = await apiClient.get<unknown>(`/api/guides/${guideId}/edit`);
+    assertGuideEditDetailResponse(res.data);
+
     return res.data;
   } catch (err) {
     if (err instanceof AppError) {
       if (err.code === "UNAUTHORIZED") throw new AuthRequiredError();
+      throw err;
+    }
+
+    if (err instanceof ResponseShapeError) {
       throw err;
     }
 

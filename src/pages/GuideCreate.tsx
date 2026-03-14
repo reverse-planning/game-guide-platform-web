@@ -16,6 +16,8 @@ import { AppError } from "@/services/apiClient";
 import { APP_ERROR_MESSAGE } from "@/constants/appErrorMessages";
 import { useAppMessageStore } from "@/stores/appMessageSlice";
 import { APP_MESSAGE_SOURCE, APP_MESSAGE_TYPE } from "@/constants/appMessage";
+import { ResponseShapeError } from "@/services/responseErrors";
+import { RESPONSE_SHAPE_ERROR_MESSAGE } from "@/constants/responseErrorMessages";
 
 type SubmitPhase = "idle" | "submitting";
 
@@ -64,6 +66,16 @@ export default function GuideCreate() {
           source: APP_MESSAGE_SOURCE.API,
           code: err.code,
           message: APP_ERROR_MESSAGE[err.code],
+        });
+        return;
+      }
+
+      if (err instanceof ResponseShapeError) {
+        showAppMessage({
+          type: APP_MESSAGE_TYPE.ERROR,
+          source: APP_MESSAGE_SOURCE.API,
+          code: err.code,
+          message: RESPONSE_SHAPE_ERROR_MESSAGE[err.code],
         });
         return;
       }
