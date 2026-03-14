@@ -1,10 +1,10 @@
 // src/services/guideDetailService.ts
 import { apiClient, AppError } from "./apiClient";
 import axios from "axios";
-import type { GuideDetailDto, GuideEditDetailDto } from "@/types/guide";
+import type { GuideDetailDto } from "@/types/guide";
 import { AuthRequiredError } from "./authErrors";
 import type { GuideId } from "@/types/id";
-import { assertGuideDetailResponse, assertGuideEditDetailResponse } from "@/types/guideGuards";
+import { assertGuideDetailResponse } from "@/types/guideGuards";
 import { ResponseShapeError } from "./responseErrors";
 
 export type GuideDetailErrorCode = "NOT_FOUND" | "UNKNOWN";
@@ -18,9 +18,9 @@ export class GuideDetailError extends Error {
   }
 }
 
-export async function getGuideDetail(guideId: number): Promise<GuideDetailDto> {
+export async function getGuideDetail(guideId: GuideId): Promise<GuideDetailDto> {
   try {
-    const res = await apiClient.get<GuideDetailDto>(`/api/guides/${guideId}`);
+    const res = await apiClient.get<unknown>(`/api/guides/${guideId}`);
     assertGuideDetailResponse(res.data);
 
     return res.data;
@@ -55,10 +55,10 @@ export class GuideEditDetailError extends Error {
   }
 }
 
-export async function getGuideEditDetail(guideId: GuideId): Promise<GuideEditDetailDto> {
+export async function getGuideEditDetail(guideId: GuideId): Promise<GuideDetailDto> {
   try {
     const res = await apiClient.get<unknown>(`/api/guides/${guideId}/edit`);
-    assertGuideEditDetailResponse(res.data);
+    assertGuideDetailResponse(res.data);
 
     return res.data;
   } catch (err) {

@@ -4,10 +4,8 @@ import { ResponseShapeError } from "@/services/responseErrors";
 import type {
   CreateGuideResponseDto,
   GuideDetailDto,
-  GuideEditDetailDto,
   GuideListItemDto,
   GuideListResponseDto,
-  UpdateGuideResponseDto,
 } from "./guide";
 
 function isNonEmptyString(value: unknown): value is string {
@@ -73,30 +71,8 @@ export function assertGuideDetailResponse(value: unknown): asserts value is Guid
   }
 }
 
-export function assertGuideEditDetailResponse(value: unknown): asserts value is GuideEditDetailDto {
-  if (
-    typeof value !== "object" ||
-    value === null ||
-    !isNumber((value as Record<string, unknown>).id) ||
-    !isNonEmptyString((value as Record<string, unknown>).title) ||
-    !isNonEmptyString((value as Record<string, unknown>).body) ||
-    !isGameName((value as Record<string, unknown>).game) ||
-    !isNonEmptyString((value as Record<string, unknown>).author) ||
-    !isNonEmptyString((value as Record<string, unknown>).updatedAt) ||
-    !isNumber((value as Record<string, unknown>).viewCount)
-  ) {
-    throw new ResponseShapeError("INVALID_GUIDE_EDIT_DETAIL_RESPONSE");
-  }
-}
-
 export function assertCreateGuideResponse(value: unknown): asserts value is CreateGuideResponseDto {
   if (!isNumber(value)) {
     throw new ResponseShapeError("INVALID_CREATE_GUIDE_RESPONSE");
-  }
-}
-
-export function assertUpdateGuideResponse(value: unknown): asserts value is UpdateGuideResponseDto {
-  if (!isNumber(value)) {
-    throw new ResponseShapeError("INVALID_UPDATE_GUIDE_RESPONSE");
   }
 }

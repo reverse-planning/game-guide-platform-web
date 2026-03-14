@@ -17,13 +17,9 @@ export class CreateGuideError extends Error {
   }
 }
 
-export type CreateGuideBody = Pick<CreateGuideRequestDto, "title" | "game" | "body">;
-
-export async function createGuide(body: CreateGuideBody): Promise<CreateGuideResponseDto> {
+export async function createGuide(body: CreateGuideRequestDto): Promise<CreateGuideResponseDto> {
   try {
-    const req: CreateGuideRequestDto = { ...body };
-
-    const res = await apiClient.post<unknown>("/api/guides", req);
+    const res = await apiClient.post<unknown>("/api/guides", body);
     assertCreateGuideResponse(res.data);
 
     return res.data;

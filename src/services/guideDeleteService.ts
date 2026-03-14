@@ -2,6 +2,7 @@
 import axios from "axios";
 import { apiClient, AppError } from "./apiClient";
 import { AuthRequiredError } from "./authErrors";
+import type { GuideId } from "@/types/id";
 
 export type DeleteGuideErrorCode = "NOT_FOUND" | "FORBIDDEN" | "UNKNOWN";
 
@@ -14,7 +15,7 @@ export class DeleteGuideError extends Error {
   }
 }
 
-export async function deleteGuide(guideId: number): Promise<void> {
+export async function deleteGuide(guideId: GuideId): Promise<void> {
   try {
     await apiClient.delete(`/api/guides/${guideId}`);
   } catch (err) {

@@ -1,11 +1,9 @@
 // src/services/guideUpdateService.ts
 import axios from "axios";
 import { apiClient, AppError } from "./apiClient";
-import type { UpdateGuideRequestDto, UpdateGuideResponseDto } from "@/types/guide";
+import type { UpdateGuideRequestDto } from "@/types/guide";
 import type { GuideId } from "@/types/id";
 import { AuthRequiredError } from "@/services/authErrors";
-import { ResponseShapeError } from "./responseErrors";
-import { assertUpdateGuideResponse } from "@/types/guideGuards";
 
 export type UpdateGuideErrorCode = "BAD_REQUEST" | "NOT_FOUND" | "UNKNOWN";
 
@@ -18,26 +16,12 @@ export class UpdateGuideError extends Error {
   }
 }
 
-export type UpdateGuideBody = Pick<UpdateGuideRequestDto, "title" | "game" | "body">;
-
-export async function updateGuide(
-  guideId: GuideId,
-  body: UpdateGuideBody,
-): Promise<UpdateGuideResponseDto> {
+export async function updateGuide(guideId: GuideId, body: UpdateGuideRequestDto): Promise<void> {
   try {
-    const req: UpdateGuideRequestDto = { ...body };
-
-    const res = await apiClient.patch<unknown>(`/api/guides/${guideId}`, req);
-    assertUpdateGuideResponse(res.data);
-
-    return res.data;
+    await apiClient.patch(`/api/guides/${guideId}`, body);
   } catch (err) {
     if (err instanceof AppError) {
       if (err.code === "UNAUTHORIZED") throw new AuthRequiredError();
-      throw err;
-    }
-
-    if (err instanceof ResponseShapeError) {
       throw err;
     }
 

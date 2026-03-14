@@ -31,24 +31,16 @@ export type GuideDetailDto = {
   updatedAt: string;
   viewCount: number;
 };
-export type GuideEditDetailDto = GuideDetailDto;
 
-export type CreateGuideRequestDto = {
+export type GuideWriteDto = {
   title: string;
   body: string;
   game: GameName;
 };
+export type CreateGuideRequestDto = GuideWriteDto;
+export type UpdateGuideRequestDto = GuideWriteDto;
+
 export type CreateGuideResponseDto = GuideId;
-
-export type UpdateGuideRequestDto = {
-  title: string;
-  body: string;
-  game: GameName;
-};
-export type UpdateGuideResponseDto = GuideId;
-
-export type DeleteGuideRequestDto = void;
-export type DeleteGuideResponseDto = void;
 
 /* =========================
  * Guide - Query

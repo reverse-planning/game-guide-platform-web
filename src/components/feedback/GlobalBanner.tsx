@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useAppMessageStore } from "@/stores/appMessageSlice";
 import { APP_MESSAGE_TYPE } from "@/constants/appMessage";
 
-export const GLOBAL_BANNER_AUTO_CLOSE_MS = 4000;
+export const GLOBAL_BANNER_AUTO_CLOSE_MS = 3000;
 
 export function GlobalBanner() {
   const { currentAppMessage, clearAppMessage } = useAppMessageStore();
@@ -18,6 +18,8 @@ export function GlobalBanner() {
   }, [currentAppMessage, clearAppMessage]);
 
   if (!currentAppMessage) return null;
+
+  console.log(currentAppMessage);
 
   const toneClassName = (() => {
     switch (currentAppMessage.type) {
@@ -36,7 +38,7 @@ export function GlobalBanner() {
   })();
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 top-4 z-[1000] flex justify-center px-4">
+    <div className="pointer-events-none fixed inset-x-0 top-4 z-1000 flex justify-center px-4">
       <div
         role="alert"
         aria-live="polite"

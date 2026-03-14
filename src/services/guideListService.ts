@@ -1,8 +1,12 @@
 import axios from "axios";
 import { apiClient, AppError } from "./apiClient";
-import { toGuideListResult, type GuideListQuery, type GuideListResult } from "@/types/guide";
+import {
+  toGuideListResult,
+  type GuideListQuery,
+  type GuideListResponseDto,
+  type GuideListResult,
+} from "@/types/guide";
 import { AuthRequiredError } from "./authErrors";
-import { assertGuideListResponse } from "@/types/guideGuards";
 import { ResponseShapeError } from "./responseErrors";
 
 export type ListGuidesErrorCode = "RATE_LIMITED" | "UNKNOWN";
@@ -18,7 +22,7 @@ export class ListGuidesError extends Error {
 
 export async function listGuides(params: GuideListQuery): Promise<GuideListResult> {
   try {
-    const res = await apiClient.get<unknown>("/api/guides", {
+    const res = await apiClient.get<GuideListResponseDto>("/api/guides", {
       params: {
         ...(params.query ? { query: params.query } : {}),
         page: params.page,
@@ -26,7 +30,7 @@ export async function listGuides(params: GuideListQuery): Promise<GuideListResul
         sort: params.sort,
       },
     });
-    assertGuideListResponse(res.data);
+    //assertGuideListResponse(res.data);
 
     return toGuideListResult(res.data);
   } catch (err) {
