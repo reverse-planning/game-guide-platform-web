@@ -1,5 +1,11 @@
 // src/services/apiClient.ts
-import axios, { AxiosError, AxiosHeaders, type InternalAxiosRequestConfig } from "axios";
+import axios, {
+  AxiosError,
+  AxiosHeaders,
+  type AxiosRequestConfig,
+  type AxiosResponse,
+  type InternalAxiosRequestConfig,
+} from "axios";
 import { useSessionStore } from "@/stores/sessionSlice";
 import { clearAccessToken, getAccessToken, setAccessToken } from "./tokenStorage";
 import type { ReissueResponseDto } from "@/types/session";
@@ -18,15 +24,15 @@ export class AppError extends Error {
   }
 }
 
-type RetryableRequestConfig = InternalAxiosRequestConfig & {
-  _retry?: boolean;
-};
-
 export const apiClient = axios.create({
   withCredentials: true,
 });
 
 const refreshClient = axios.create({
+  withCredentials: true,
+});
+
+const retryClient = axios.create({
   withCredentials: true,
 });
 
@@ -41,7 +47,7 @@ function resetAuthState() {
  */
 let refreshPromise: Promise<string> | null = null;
 
-async function refreshAccessToken(): Promise<string> {
+export async function refreshAccessToken(): Promise<string> {
   if (!refreshPromise) {
     refreshPromise = refreshClient
       .post<ReissueResponseDto>("/api/reissue")
@@ -67,7 +73,7 @@ async function refreshAccessToken(): Promise<string> {
  * ========================= */
 apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const accessToken = getAccessToken();
-  const headers = AxiosHeaders.from(config.headers);
+  const headers = new AxiosHeaders(config.headers as Record<string, string>);
 
   if (accessToken) {
     headers.set("Authorization", `Bearer ${accessToken}`);
@@ -83,60 +89,68 @@ apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
 /* =========================
  * 2. 응답 인터셉터: 401 → reissue → 재시도
  * ========================= */
-
 apiClient.interceptors.response.use(
-  (res) => res,
-  async (err: AxiosError) => {
-    const originalRequest = err.config as RetryableRequestConfig | undefined;
-
+  (response) => response,
+  (err: AxiosError) => {
     // Network
     if (!err.response) {
       return Promise.reject(new AppError("NETWORK", "NETWORK_ERROR"));
     }
 
-    const status = err.response.status;
-
-    // 401 처리
-    if (status === 401 && originalRequest) {
-      const url = originalRequest.url ?? "";
-      const method = (originalRequest.method ?? "get").toLowerCase();
-
-      const isReissueRequest = url.includes("/api/reissue");
-      const isCreateSessionRequest = url.includes("/api/session") && method === "post";
-      const isDeleteSessionRequest = url.includes("/api/session") && method === "delete";
-
-      // 재발급 자체가 실패했거나 이미 재시도한 요청이면 종료
-      if (
-        isReissueRequest ||
-        isCreateSessionRequest ||
-        isDeleteSessionRequest ||
-        originalRequest._retry
-      ) {
-        resetAuthState();
-        return Promise.reject(new AppError("UNAUTHORIZED", "UNAUTHORIZED", 401));
-      }
-
-      originalRequest._retry = true;
-
-      try {
-        const newAccessToken = await refreshAccessToken();
-
-        const headers = AxiosHeaders.from(originalRequest.headers);
-        headers.set("Authorization", `Bearer ${newAccessToken}`);
-        originalRequest.headers = headers;
-
-        return apiClient(originalRequest);
-      } catch (refreshError) {
-        return Promise.reject(refreshError);
-      }
-    }
-
     // Server 5xx
-    if (status >= 500) {
-      return Promise.reject(new AppError("SERVER", "SERVER_ERROR", status));
+    if (err.response.status >= 500) {
+      return Promise.reject(new AppError("SERVER", "SERVER_ERROR", err.response.status));
     }
 
     // 4xx는 서비스에서 의미 해석 필요 → 그대로
     return Promise.reject(err);
   },
 );
+
+export async function requestWithAuthRetry<T>(
+  config: AxiosRequestConfig,
+): Promise<AxiosResponse<T>> {
+  try {
+    return await apiClient.request<T>(config);
+  } catch (err) {
+    if (!axios.isAxiosError(err)) {
+      throw err;
+    }
+
+    const status = err.response?.status;
+    const url = config.url ?? "";
+    const method = (config.method ?? "get").toLowerCase();
+
+    const isReissueRequest = url.includes("/api/reissue");
+    const isCreateSessionRequest = url.includes("/api/session") && method === "post";
+    const isDeleteSessionRequest = url.includes("/api/session") && method === "delete";
+    const isLogoutRequest = url.includes("/api/logout") && method === "post";
+
+    if (
+      status !== 401 ||
+      isReissueRequest ||
+      isCreateSessionRequest ||
+      isDeleteSessionRequest ||
+      isLogoutRequest
+    ) {
+      throw err;
+    }
+
+    const newAccessToken = await refreshAccessToken();
+
+    const headers = new AxiosHeaders(config.headers as Record<string, string>);
+    headers.set("Authorization", `Bearer ${newAccessToken}`);
+
+    return retryClient.request<T>({
+      url: config.url,
+      method: config.method,
+      params: config.params,
+      data: config.data,
+      baseURL: config.baseURL,
+      timeout: config.timeout,
+      responseType: config.responseType,
+      signal: config.signal,
+      headers,
+    });
+  }
+}

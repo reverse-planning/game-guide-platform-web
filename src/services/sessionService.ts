@@ -1,6 +1,6 @@
 // src/services/sessionService.ts
 import axios from "axios";
-import { apiClient, AppError } from "./apiClient";
+import { apiClient, AppError, requestWithAuthRetry } from "./apiClient";
 import type { CreateSessionResponseDto, GetSessionResponseDto } from "@/types/session";
 import { useSessionStore } from "@/stores/sessionSlice";
 import { clearAccessToken, setAccessToken } from "./tokenStorage";
@@ -48,7 +48,10 @@ export async function createSession(nickname: string): Promise<CreateSessionResp
 
 export async function getSession(): Promise<GetSessionResponseDto> {
   try {
-    const res = await apiClient.get<unknown>("/api/session");
+    const res = await requestWithAuthRetry<unknown>({
+      url: "/api/session",
+      method: "get",
+    });
     assertGetSessionResponse(res.data);
 
     useSessionStore.getState().setViewer({ nickname: res.data.nickname });

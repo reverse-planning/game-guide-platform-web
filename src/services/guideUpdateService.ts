@@ -1,6 +1,6 @@
 // src/services/guideUpdateService.ts
 import axios from "axios";
-import { apiClient, AppError } from "./apiClient";
+import { AppError, requestWithAuthRetry } from "./apiClient";
 import type { UpdateGuideRequestDto } from "@/types/guide";
 import type { GuideId } from "@/types/id";
 import { AuthRequiredError } from "@/services/authErrors";
@@ -18,7 +18,11 @@ export class UpdateGuideError extends Error {
 
 export async function updateGuide(guideId: GuideId, body: UpdateGuideRequestDto): Promise<void> {
   try {
-    await apiClient.patch(`/api/guides/${guideId}`, body);
+    await requestWithAuthRetry<void>({
+      url: `/api/guides/${guideId}`,
+      method: "patch",
+      data: body,
+    });
   } catch (err) {
     if (err instanceof AppError) {
       if (err.code === "UNAUTHORIZED") throw new AuthRequiredError();

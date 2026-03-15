@@ -1,5 +1,5 @@
 import axios from "axios";
-import { apiClient, AppError } from "./apiClient";
+import { AppError, requestWithAuthRetry } from "./apiClient";
 import {
   toGuideListResult,
   type GuideListQuery,
@@ -22,7 +22,9 @@ export class ListGuidesError extends Error {
 
 export async function listGuides(params: GuideListQuery): Promise<GuideListResult> {
   try {
-    const res = await apiClient.get<GuideListResponseDto>("/api/guides", {
+    const res = await requestWithAuthRetry<GuideListResponseDto>({
+      url: "/api/guides",
+      method: "get",
       params: {
         ...(params.query ? { query: params.query } : {}),
         page: params.page,
@@ -31,9 +33,28 @@ export async function listGuides(params: GuideListQuery): Promise<GuideListResul
       },
     });
     //assertGuideListResponse(res.data);
+    console.log("[listGuides] response object", res);
+    console.log("[listGuides] status", res.status);
+    console.log("[listGuides] headers", res.headers);
+    console.log("[listGuides] data", res.data);
+
+    if (
+      typeof res !== "object" ||
+      res === null ||
+      !("data" in res) ||
+      typeof res.data !== "object" ||
+      res.data === null ||
+      !("content" in res.data) ||
+      !("hasNext" in res.data) ||
+      !("currentPage" in res.data)
+    ) {
+      throw new ResponseShapeError("INVALID_GUIDE_LIST_RESPONSE");
+    }
 
     return toGuideListResult(res.data);
   } catch (err) {
+    console.error("[listGuides] raw catch", err);
+    console.log("[listGuides] isAxiosError", axios.isAxiosError(err));
     if (err instanceof AppError) {
       if (err.code === "UNAUTHORIZED") throw new AuthRequiredError();
       throw err;
@@ -45,6 +66,7 @@ export async function listGuides(params: GuideListQuery): Promise<GuideListResul
 
     if (axios.isAxiosError(err)) {
       if (err.response?.status === 429) throw new ListGuidesError("RATE_LIMITED");
+      console.log("4xx");
       throw new ListGuidesError("UNKNOWN");
     }
 

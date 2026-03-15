@@ -22,12 +22,14 @@ import { useAppMessageStore } from "@/stores/appMessageSlice";
 import { APP_MESSAGE_SOURCE, APP_MESSAGE_TYPE } from "@/constants/appMessage";
 import { ResponseShapeError } from "@/services/responseErrors";
 import { RESPONSE_SHAPE_ERROR_MESSAGE } from "@/constants/responseErrorMessages";
+import type { GuideId } from "@/types/id";
 
 type ListFetchPhase = "idle" | "fetching";
 type LogoutPhase = "idle" | "submitting";
+type InitialLoadState = "idle" | "loading" | "success" | "error";
 
 const PAGE_SIZE = 20;
-const DEFAULT_SORT = "updatedAt,desc";
+const DEFAULT_SORT: GuideListSort = "updatedAt,desc";
 const ROOT_MARGIN = "200px";
 const DEBOUNCE_MS = 250;
 
@@ -57,6 +59,7 @@ export default function GuideList() {
 
   const [fetchPhase, setFetchPhase] = useState<ListFetchPhase>("idle");
   const [logoutPhase, setLogoutPhase] = useState<LogoutPhase>("idle");
+  const [initialLoadState, setInitialLoadState] = useState<InitialLoadState>("idle");
 
   const isFetching = fetchPhase === "fetching";
   const isLoggingOut = logoutPhase === "submitting";
@@ -87,11 +90,13 @@ export default function GuideList() {
 
   // ✅ 1) query를 debounce해서 debouncedQuery를 만든다
   useEffect(() => {
-    const t = window.setTimeout(() => {
+    const timeoutId = window.setTimeout(() => {
       setDebouncedQuery(query);
     }, DEBOUNCE_MS);
 
-    return () => window.clearTimeout(t);
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
   }, [query]);
 
   // ✅ 2) debounce가 끝나면 effectiveQuery 반영
@@ -104,7 +109,7 @@ export default function GuideList() {
   // ✅ 서버에서 받아온 items에 대해 "프론트 게임 필터" 적용
   const filteredItems = useMemo(() => {
     if (game === "ALL") return items;
-    return items.filter((it) => it.game === game);
+    return items.filter((item) => item.game === game);
   }, [items, game]);
 
   // ✅ effectiveQuery/정렬 변경 시: 서버에서 0페이지부터 다시 로드
@@ -115,14 +120,19 @@ export default function GuideList() {
     async function init() {
       clearAppMessage();
       setFetchPhase("fetching");
+      setInitialLoadState("loading");
 
       try {
+        console.log("init-0");
         const data = await listGuides({ query: effectiveQuery, page: 0, size: PAGE_SIZE, sort });
+        console.log("init-1", data);
         if (ignore) return;
+        console.log("init-2", data);
 
         setItems(data.items);
         setPage(0);
         setHasNext(data.nextPage !== null);
+        setInitialLoadState("success");
       } catch (err) {
         if (ignore) return;
 
@@ -132,7 +142,9 @@ export default function GuideList() {
         }
 
         setItems([]);
+        setPage(0);
         setHasNext(false);
+        setInitialLoadState("error");
 
         if (err instanceof AppError) {
           showAppMessage({
@@ -193,12 +205,14 @@ export default function GuideList() {
     try {
       const nextPage = pageRef.current + 1;
 
+      console.log("loadmore-0");
       const data = await listGuides({
         query: effectiveQueryRef.current,
         page: nextPage,
         size: PAGE_SIZE,
         sort: sortRef.current,
       });
+      console.log("loadmore-1", data);
 
       // 다음 페이지가 null이면 마지막
       setHasNext(data.nextPage !== null);
@@ -289,6 +303,8 @@ export default function GuideList() {
 
   // ✅ 무한 스크롤: IntersectionObserver (관찰만, 데이터는 service가 담당)
   useEffect(() => {
+    if (initialLoadState !== "success") return;
+
     const el = sentinelRef.current;
     if (!el) return;
 
@@ -302,9 +318,9 @@ export default function GuideList() {
 
     io.observe(el);
     return () => io.disconnect();
-  }, [loadMore]);
+  }, [initialLoadState, loadMore]);
 
-  const onCardClick = (id: number) => {
+  const onCardClick = (id: GuideId) => {
     // 드래그로 텍스트 선택 중이면 이동 금지
     const sel = window.getSelection?.();
     if (sel && sel.type === "Range") return;
@@ -389,36 +405,36 @@ export default function GuideList() {
 
         {/* 카드 그리드 (3열 기준) */}
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredItems.map((it) => (
+          {filteredItems.map((item) => (
             <article
-              key={it.id}
+              key={item.id}
               role="link"
               tabIndex={0}
-              onClick={() => onCardClick(it.id)}
+              onClick={() => onCardClick(item.id)}
               onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") onCardClick(it.id);
+                if (e.key === "Enter" || e.key === " ") onCardClick(item.id);
               }}
               className="group relative cursor-pointer rounded-xl border bg-white p-4 shadow-sm transition hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
             >
               {/* 접근성/SEO용 “진짜 링크”는 제목에만 둬도 충분 */}
               <h2 className="line-clamp-1 font-semibold text-zinc-900">
                 <Link
-                  to={`/guides/${it.id}`}
+                  to={`/guides/${item.id}`}
                   onClick={(e) => e.stopPropagation()} // 중복 네비게이션 방지
                   className="focus:outline-none"
                 >
-                  {it.title}
+                  {item.title}
                 </Link>
               </h2>
 
               <div className="mt-1 text-xs text-zinc-500">
-                {it.game} · {it.author}
+                {item.game} · {item.author}
               </div>
 
-              <p className="mt-3 truncate text-sm text-zinc-700">{it.excerpt}</p>
+              <p className="mt-3 truncate text-sm text-zinc-700">{item.excerpt}</p>
 
               <div className="mt-3 text-xs text-zinc-500">
-                {formatDateToMinute(it.updatedAt)} · 조회 {it.viewCount}
+                {formatDateToMinute(item.updatedAt)} · 조회 {item.viewCount}
               </div>
             </article>
           ))}

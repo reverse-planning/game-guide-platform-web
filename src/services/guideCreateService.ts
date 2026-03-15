@@ -1,6 +1,6 @@
 // src/services/guideCreateService.ts
 import axios from "axios";
-import { apiClient, AppError } from "./apiClient";
+import { AppError, requestWithAuthRetry } from "./apiClient";
 import type { CreateGuideRequestDto, CreateGuideResponseDto } from "@/types/guide";
 import { AuthRequiredError } from "@/services/authErrors";
 import { ResponseShapeError } from "./responseErrors";
@@ -19,7 +19,11 @@ export class CreateGuideError extends Error {
 
 export async function createGuide(body: CreateGuideRequestDto): Promise<CreateGuideResponseDto> {
   try {
-    const res = await apiClient.post<unknown>("/api/guides", body);
+    const res = await requestWithAuthRetry<unknown>({
+      url: "/api/guides",
+      method: "post",
+      data: body,
+    });
     assertCreateGuideResponse(res.data);
 
     return res.data;

@@ -1,5 +1,5 @@
 // src/services/guideDetailService.ts
-import { apiClient, AppError } from "./apiClient";
+import { AppError, requestWithAuthRetry } from "./apiClient";
 import axios from "axios";
 import type { GuideDetailDto } from "@/types/guide";
 import { AuthRequiredError } from "./authErrors";
@@ -20,7 +20,10 @@ export class GuideDetailError extends Error {
 
 export async function getGuideDetail(guideId: GuideId): Promise<GuideDetailDto> {
   try {
-    const res = await apiClient.get<unknown>(`/api/guides/${guideId}`);
+    const res = await requestWithAuthRetry<unknown>({
+      url: `/api/guides/${guideId}`,
+      method: "get",
+    });
     assertGuideDetailResponse(res.data);
 
     return res.data;
@@ -57,7 +60,10 @@ export class GuideEditDetailError extends Error {
 
 export async function getGuideEditDetail(guideId: GuideId): Promise<GuideDetailDto> {
   try {
-    const res = await apiClient.get<unknown>(`/api/guides/${guideId}/edit`);
+    const res = await requestWithAuthRetry<unknown>({
+      url: `/api/guides/${guideId}/edit`,
+      method: "get",
+    });
     assertGuideDetailResponse(res.data);
 
     return res.data;
