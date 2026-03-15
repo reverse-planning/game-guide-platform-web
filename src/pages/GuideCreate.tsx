@@ -7,17 +7,17 @@ import { HeaderShell } from "@/components/shell/HeaderShell";
 import { GnbBrand } from "@/components/gnb/GnbBrand";
 import { PageShell } from "@/components/shell/PageShell";
 import { AuthRequiredError } from "@/services/authErrors";
-import { GAMES, type GameName } from "@/constants/games";
+import { GAMES } from "@/constants/games";
 import { ActionSecondaryLink } from "@/components/actions/ActionSecondaryLink";
 import { ActionPrimaryButton } from "@/components/actions/ActionPrimaryButton";
 import { buildLoginUrl } from "@/routes/utils/buildLoginUrl";
-import { UI_MESSAGE } from "@/constants/uiMessages";
 import { AppError } from "@/services/apiClient";
 import { APP_ERROR_MESSAGE } from "@/constants/appErrorMessages";
 import { useAppMessageStore } from "@/stores/appMessageSlice";
 import { APP_MESSAGE_SOURCE, APP_MESSAGE_TYPE } from "@/constants/appMessage";
 import { ResponseShapeError } from "@/services/responseErrors";
 import { RESPONSE_SHAPE_ERROR_MESSAGE } from "@/constants/responseErrorMessages";
+import { validateGuideForm } from "@/features/guides/guideFormValidation";
 
 type SubmitPhase = "idle" | "submitting";
 
@@ -37,12 +37,14 @@ export default function GuideCreate() {
     if (isSubmitting) return;
 
     const fd = new FormData(e.currentTarget);
-    const title = String(fd.get("title") ?? "").trim();
-    const game = String(fd.get("game") ?? "").trim() as GameName;
-    const body = String(fd.get("body") ?? "").trim();
+    const result = validateGuideForm({
+      title: fd.get("title"),
+      game: fd.get("game"),
+      body: fd.get("body"),
+    });
 
-    if (!title || !game || !body) {
-      setFormMessage(UI_MESSAGE.REQUIRED_FIELDS);
+    if (!result.ok) {
+      setFormMessage(result.message);
       return;
     }
 
@@ -51,7 +53,7 @@ export default function GuideCreate() {
     setSubmitPhase("submitting");
 
     try {
-      await createGuide({ title, game, body });
+      await createGuide(result.value);
       navigate("/guides");
     } catch (err) {
       // ✅ 세션 누락: 홈으로 보내고 next로 복귀 가능하게

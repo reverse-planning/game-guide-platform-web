@@ -1,6 +1,6 @@
 // src/pages/GuideEdit.tsx
 import { useNavigate, useParams } from "react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { getGuideEditDetail, GuideEditDetailError } from "@/services/guideDetailService";
 import { updateGuide, UpdateGuideError } from "@/services/guideUpdateService";
 import {
@@ -13,7 +13,7 @@ import { PageShell } from "@/components/shell/PageShell";
 import { AuthRequiredError } from "@/services/authErrors";
 import { ActionSecondaryLink } from "@/components/actions/ActionSecondaryLink";
 import { ActionPrimaryButton } from "@/components/actions/ActionPrimaryButton";
-import { GAMES, type GameName } from "@/constants/games";
+import { GAMES } from "@/constants/games";
 import { buildLoginUrl } from "@/routes/utils/buildLoginUrl";
 import { UI_MESSAGE } from "@/constants/uiMessages";
 import { ROUTE_MESSAGE } from "@/constants/routeMessages";
@@ -23,14 +23,13 @@ import { useAppMessageStore } from "@/stores/appMessageSlice";
 import { APP_MESSAGE_SOURCE, APP_MESSAGE_TYPE } from "@/constants/appMessage";
 import { ResponseShapeError } from "@/services/responseErrors";
 import { RESPONSE_SHAPE_ERROR_MESSAGE } from "@/constants/responseErrorMessages";
+import { validateGuideForm } from "@/features/guides/guideFormValidation";
+import type { GuideFormValue } from "@/types/guide";
 
-export type FormState = {
-  title: string;
-  game: GameName;
-  body: string;
-};
-
-type LoadState = { type: "loading" } | { type: "ready"; form: FormState } | { type: "loadFailed" };
+type LoadState =
+  | { type: "loading" }
+  | { type: "ready"; form: GuideFormValue }
+  | { type: "loadFailed" };
 
 type SavePhase = "idle" | "saving";
 
@@ -41,7 +40,7 @@ export default function GuideEdit() {
   const { showAppMessage, clearAppMessage } = useAppMessageStore();
 
   const { guideId } = useParams();
-  const id = useMemo(() => Number(guideId), [guideId]);
+  const id = Number(guideId);
 
   const [loadState, setLoadState] = useState<LoadState>({ type: "loading" });
   const [savePhase, setSavePhase] = useState<SavePhase>("idle");
@@ -117,21 +116,23 @@ export default function GuideEdit() {
     if (loadState.type !== "ready" || savePhase === "saving") return;
 
     const fd = new FormData(e.currentTarget);
-    const title = String(fd.get("title") ?? "").trim();
-    const game = String(fd.get("game") ?? "").trim() as GameName;
-    const body = String(fd.get("body") ?? "").trim();
+    const result = validateGuideForm({
+      title: fd.get("title"),
+      game: fd.get("game"),
+      body: fd.get("body"),
+    });
 
-    if (!title || !game || !body) {
+    if (!result.ok) {
       showAppMessage({
         type: APP_MESSAGE_TYPE.ERROR,
         source: APP_MESSAGE_SOURCE.UI,
-        code: "REQUIRED_FIELDS",
-        message: UI_MESSAGE.REQUIRED_FIELDS,
+        code: "INVALID_FORM",
+        message: result.message,
       });
       return;
     }
 
-    const nextForm: FormState = { title, game, body };
+    const nextForm: GuideFormValue = result.value;
 
     clearAppMessage();
     setSavePhase("saving");

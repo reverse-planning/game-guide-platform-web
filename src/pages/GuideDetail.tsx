@@ -1,6 +1,6 @@
 // src/pages/GuideDetail.tsx
 import { Link, useNavigate, useParams } from "react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { getGuideDetail, GuideDetailError } from "@/services/guideDetailService";
 import { DELETE_GUIDE_ERROR_MESSAGE, GUIDE_DETAIL_ERROR_MESSAGE } from "@/constants/errorMessages";
 import { deleteGuide, DeleteGuideError } from "@/services/guideDeleteService";
@@ -23,6 +23,7 @@ import { useAppMessageStore } from "@/stores/appMessageSlice";
 import { APP_MESSAGE_SOURCE, APP_MESSAGE_TYPE } from "@/constants/appMessage";
 import { ResponseShapeError } from "@/services/responseErrors";
 import { RESPONSE_SHAPE_ERROR_MESSAGE } from "@/constants/responseErrorMessages";
+import { GnbUserBadge } from "@/components/gnb/GnbUserBadge";
 
 type LoadState =
   | { type: "idle" }
@@ -35,7 +36,7 @@ export default function GuideDetail() {
   const { sessionNickname } = useSessionView();
   const { showAppMessage, clearAppMessage } = useAppMessageStore();
   const { guideId } = useParams();
-  const id = useMemo(() => Number(guideId), [guideId]);
+  const id = Number(guideId);
 
   const [state, setState] = useState<LoadState>({ type: "idle" });
   const [pageMessage, setPageMessage] = useState<string | null>(null);
@@ -156,7 +157,12 @@ export default function GuideDetail() {
     <PageShell>
       <HeaderShell
         left={<GnbBrand />}
-        right={<ActionPrimaryLink to="/guides/new">공략 등록</ActionPrimaryLink>}
+        right={
+          <div className="flex items-center gap-3">
+            <ActionPrimaryLink to="/guides/new">공략 등록</ActionPrimaryLink>
+            {sessionNickname && <GnbUserBadge nickname={sessionNickname} />}
+          </div>
+        }
       />
 
       <main className="mx-auto max-w-3xl p-4">

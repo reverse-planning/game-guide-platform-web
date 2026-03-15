@@ -7,7 +7,6 @@ import { CREATE_SESSION_ERROR_MESSAGE } from "@/constants/errorMessages";
 import { HeaderShell } from "@/components/shell/HeaderShell";
 import { GnbBrand } from "@/components/gnb/GnbBrand";
 import { getSafeNext } from "@/routes/utils/safeNext";
-import { UI_MESSAGE } from "@/constants/uiMessages";
 import { GnbGuestStatus } from "@/components/gnb/GnbGuestStatus";
 import { AppError } from "@/services/apiClient";
 import { APP_ERROR_MESSAGE } from "@/constants/appErrorMessages";
@@ -15,6 +14,8 @@ import { useAppMessageStore } from "@/stores/appMessageSlice";
 import { APP_MESSAGE_SOURCE, APP_MESSAGE_TYPE } from "@/constants/appMessage";
 import { ResponseShapeError } from "@/services/responseErrors";
 import { RESPONSE_SHAPE_ERROR_MESSAGE } from "@/constants/responseErrorMessages";
+import { ActionPrimaryButton } from "@/components/actions/ActionPrimaryButton";
+import { validateNickname } from "@/features/session/nicknameValidation";
 
 type SubmitPhase = "idle" | "submitting";
 
@@ -27,6 +28,7 @@ export default function Home() {
 
   const [inputNickname, setInputNickname] = useState(() => getNicknameHint() ?? "");
   const [submitPhase, setSubmitPhase] = useState<SubmitPhase>("idle");
+  const [formMessage, setFormMessage] = useState<string | null>(null);
 
   const isSubmitting = submitPhase === "submitting";
 
@@ -35,14 +37,18 @@ export default function Home() {
 
     if (isSubmitting) return;
 
-    const name = inputNickname.trim();
-    if (!name) return;
+    const result = validateNickname(inputNickname);
+    if (!result.ok) {
+      setFormMessage(result.message);
+      return;
+    }
 
+    setFormMessage(null);
     clearAppMessage();
     setSubmitPhase("submitting");
 
     try {
-      const data = await createSession(name);
+      const data = await createSession(result.value);
       // ✅ localStorage는 UX 힌트(프리필)만
       setNicknameHint(data.nickname);
 
@@ -115,19 +121,24 @@ export default function Home() {
               name="nickname"
               type="text"
               value={inputNickname}
-              onChange={(e) => setInputNickname(e.target.value)}
+              onChange={(e) => {
+                setInputNickname(e.target.value);
+                setFormMessage(null);
+              }}
               placeholder="닉네임을 입력하세요"
               className="w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900"
             />
+            {formMessage && <p className="mt-2 text-sm text-red-600">{formMessage}</p>}
           </div>
 
-          <button
+          <ActionPrimaryButton
             type="submit"
             disabled={isSubmitting}
-            className="mt-4 w-full rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-50"
+            loading={isSubmitting}
+            className="mt-4 w-full"
           >
-            {isSubmitting ? UI_MESSAGE.SUBMITTING : "시작하기"}
-          </button>
+            시작하기
+          </ActionPrimaryButton>
         </form>
       </main>
     </div>

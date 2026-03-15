@@ -60,6 +60,12 @@ export type GuideListQuery = {
  * UI Model
  * ========================= */
 
+export type GuideFormValue = {
+  title: string;
+  game: GameName;
+  body: string;
+};
+
 export type GuideListItem = GuideListItemDto;
 export type GuideDetail = GuideDetailDto;
 
