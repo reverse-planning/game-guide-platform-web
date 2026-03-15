@@ -3,7 +3,7 @@ import { http, HttpResponse } from "msw";
 import { getMockSession } from "@/mocks/state/mockSession";
 import { findGuide, updateGuideItem } from "../state/guideDb";
 import type { GuideId } from "@/types/id";
-import type { GuideDetailDto, UpdateGuideRequestDto, UpdateGuideResponseDto } from "@/types/guide";
+import type { GuideDetailDto, UpdateGuideRequestDto } from "@/types/guide";
 import type { GameName } from "@/constants/games";
 
 export const guideUpdateHandlers = [
@@ -41,7 +41,6 @@ export const guideUpdateHandlers = [
       return HttpResponse.json({ message: "NOT_FOUND" }, { status: 404 });
     }
 
-    const response: UpdateGuideResponseDto = next.id;
-    return HttpResponse.json(response, { status: 200 });
+    return HttpResponse.json({ status: 200 });
   }),
 ];
