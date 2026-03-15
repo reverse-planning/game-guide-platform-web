@@ -25,6 +25,7 @@ import { ResponseShapeError } from "@/services/responseErrors";
 import { RESPONSE_SHAPE_ERROR_MESSAGE } from "@/constants/responseErrorMessages";
 import { validateGuideForm } from "@/features/guides/guideFormValidation";
 import type { GuideFormValue } from "@/types/guide";
+import { parseGuideId } from "@/routes/utils/parseGuideId";
 
 type LoadState =
   | { type: "loading" }
@@ -37,10 +38,10 @@ const GUIDE_EDIT_FORM_ID = "guide-edit-form";
 
 export default function GuideEdit() {
   const navigate = useNavigate();
-  const { showAppMessage, clearAppMessage } = useAppMessageStore();
-
   const { guideId } = useParams();
-  const id = Number(guideId);
+  const id = parseGuideId(guideId);
+
+  const { showAppMessage, clearAppMessage } = useAppMessageStore();
 
   const [loadState, setLoadState] = useState<LoadState>({ type: "loading" });
   const [savePhase, setSavePhase] = useState<SavePhase>("idle");
@@ -50,7 +51,7 @@ export default function GuideEdit() {
     let ignore = false;
 
     async function run() {
-      if (!Number.isInteger(id) || id <= 0) {
+      if (id === null) {
         setPageMessage(ROUTE_MESSAGE.INVALID_GUIDE_ID);
         setLoadState({ type: "loadFailed" });
         return;
@@ -113,6 +114,8 @@ export default function GuideEdit() {
 
   const onSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    if (id === null) return;
     if (loadState.type !== "ready" || savePhase === "saving") return;
 
     const fd = new FormData(e.currentTarget);

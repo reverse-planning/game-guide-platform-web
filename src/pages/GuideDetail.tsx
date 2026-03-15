@@ -24,6 +24,7 @@ import { APP_MESSAGE_SOURCE, APP_MESSAGE_TYPE } from "@/constants/appMessage";
 import { ResponseShapeError } from "@/services/responseErrors";
 import { RESPONSE_SHAPE_ERROR_MESSAGE } from "@/constants/responseErrorMessages";
 import { GnbUserBadge } from "@/components/gnb/GnbUserBadge";
+import { parseGuideId } from "@/routes/utils/parseGuideId";
 
 type LoadState =
   | { type: "idle" }
@@ -33,10 +34,11 @@ type LoadState =
 
 export default function GuideDetail() {
   const navigate = useNavigate();
+  const { guideId } = useParams();
+  const id = parseGuideId(guideId);
+
   const { sessionNickname } = useSessionView();
   const { showAppMessage, clearAppMessage } = useAppMessageStore();
-  const { guideId } = useParams();
-  const id = Number(guideId);
 
   const [state, setState] = useState<LoadState>({ type: "idle" });
   const [pageMessage, setPageMessage] = useState<string | null>(null);
@@ -48,7 +50,7 @@ export default function GuideDetail() {
     let ignore = false;
 
     async function run() {
-      if (!Number.isInteger(id) || id <= 0) {
+      if (id === null) {
         setPageMessage(ROUTE_MESSAGE.INVALID_GUIDE_ID);
         setState({ type: "loadFailed" });
         return;
@@ -101,7 +103,7 @@ export default function GuideDetail() {
   }, [id, navigate, clearAppMessage]);
 
   const onDelete = async () => {
-    if (!Number.isInteger(id) || id <= 0) return;
+    if (id === null) return;
 
     const ok = window.confirm("정말 삭제할까요?");
     if (!ok) return;
