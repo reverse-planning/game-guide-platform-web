@@ -8,7 +8,7 @@ import type {
   GuideListResponseDto,
 } from "./guide";
 
-function isNonEmptyString(value: unknown): value is string {
+function isString(value: unknown): value is string {
   return typeof value === "string";
 }
 
@@ -29,11 +29,11 @@ export function assertGuideListItem(value: unknown): asserts value is GuideListI
     typeof value !== "object" ||
     value === null ||
     !isNumber((value as Record<string, unknown>).id) ||
-    !isNonEmptyString((value as Record<string, unknown>).title) ||
-    !isNonEmptyString((value as Record<string, unknown>).excerpt) ||
+    !isString((value as Record<string, unknown>).title) ||
+    !isString((value as Record<string, unknown>).excerpt) ||
     !isGameName((value as Record<string, unknown>).game) ||
-    !isNonEmptyString((value as Record<string, unknown>).author) ||
-    !isNonEmptyString((value as Record<string, unknown>).updatedAt) ||
+    !isString((value as Record<string, unknown>).author) ||
+    !isString((value as Record<string, unknown>).updatedAt) ||
     !isNumber((value as Record<string, unknown>).viewCount)
   ) {
     throw new ResponseShapeError("INVALID_GUIDE_LIST_ITEM");
@@ -60,11 +60,11 @@ export function assertGuideDetailResponse(value: unknown): asserts value is Guid
     typeof value !== "object" ||
     value === null ||
     !isNumber((value as Record<string, unknown>).id) ||
-    !isNonEmptyString((value as Record<string, unknown>).title) ||
-    !isNonEmptyString((value as Record<string, unknown>).body) ||
+    !isString((value as Record<string, unknown>).title) ||
+    !isString((value as Record<string, unknown>).body) ||
     !isGameName((value as Record<string, unknown>).game) ||
-    !isNonEmptyString((value as Record<string, unknown>).author) ||
-    !isNonEmptyString((value as Record<string, unknown>).updatedAt) ||
+    !isString((value as Record<string, unknown>).author) ||
+    !isString((value as Record<string, unknown>).updatedAt) ||
     !isNumber((value as Record<string, unknown>).viewCount)
   ) {
     throw new ResponseShapeError("INVALID_GUIDE_DETAIL_RESPONSE");
