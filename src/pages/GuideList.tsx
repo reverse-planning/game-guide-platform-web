@@ -399,52 +399,66 @@ export default function GuideList() {
           </div>
         </div>
 
-        {/* 카드 그리드 (3열 기준) */}
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredItems.map((item) => (
-            <article
-              key={item.id}
-              role="link"
-              tabIndex={0}
-              onClick={() => onCardClick(item.id)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") onCardClick(item.id);
-              }}
-              className="group relative cursor-pointer rounded-xl border bg-white p-4 shadow-sm transition hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
-            >
-              {/* 접근성/SEO용 “진짜 링크”는 제목에만 둬도 충분 */}
-              <h2 className="line-clamp-1 font-semibold text-zinc-900">
-                <Link
-                  to={`/guides/${item.id}`}
-                  onClick={(e) => e.stopPropagation()} // 중복 네비게이션 방지
-                  className="focus:outline-none"
+        {isInitialLoading ? (
+          <div className="rounded-xl border bg-white p-6 text-sm text-zinc-600 shadow-sm">
+            {UI_STATUS_MESSAGE.LOADING}
+          </div>
+        ) : filteredItems.length === 0 ? (
+          <div className="rounded-xl border bg-white p-6 text-sm text-zinc-600 shadow-sm">
+            {UI_RESULT_MESSAGE.EMPTY_SEARCH_RESULT}
+          </div>
+        ) : (
+          <>
+            {/* 카드 그리드 (3열 기준) */}
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {filteredItems.map((item) => (
+                <article
+                  key={item.id}
+                  role="link"
+                  tabIndex={0}
+                  onClick={() => onCardClick(item.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") onCardClick(item.id);
+                  }}
+                  className="group relative cursor-pointer rounded-xl border bg-white p-4 shadow-sm transition hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
                 >
-                  {item.title}
-                </Link>
-              </h2>
+                  {/* 접근성/SEO용 “진짜 링크”는 제목에만 둬도 충분 */}
+                  <h2 className="line-clamp-1 font-semibold text-zinc-900">
+                    <Link
+                      to={`/guides/${item.id}`}
+                      onClick={(e) => e.stopPropagation()} // 중복 네비게이션 방지
+                      className="focus:outline-none"
+                    >
+                      {item.title}
+                    </Link>
+                  </h2>
 
-              <div className="mt-1 text-xs text-zinc-500">
-                {item.game} · {item.author}
-              </div>
+                  <div className="mt-1 text-xs text-zinc-500">
+                    {item.game} · {item.author}
+                  </div>
 
-              <p className="mt-3 truncate text-sm text-zinc-700">{item.excerpt}</p>
+                  <p className="mt-3 truncate text-sm text-zinc-700">{item.excerpt}</p>
 
-              <div className="mt-3 text-xs text-zinc-500">
-                {formatDateToMinute(item.updatedAt)} · 조회 {item.viewCount}
-              </div>
-            </article>
-          ))}
-        </div>
+                  <div className="mt-3 text-xs text-zinc-500">
+                    {formatDateToMinute(item.updatedAt)} · 조회 {item.viewCount}
+                  </div>
+                </article>
+              ))}
+            </div>
 
-        {/* 무한 스크롤 센티널 */}
-        <div ref={sentinelRef} className="h-10" />
+            {/* 무한 스크롤 센티널 */}
+            <div ref={sentinelRef} className="h-10" />
 
-        {/* 로딩/끝 상태 */}
-        <div className="py-6 text-center text-sm text-zinc-600">
-          {isInitialLoading && UI_STATUS_MESSAGE.LOADING}
-          {isLoadingMore && UI_STATUS_MESSAGE.LOADING}
-          {!isLoadingMore && items.length > 0 && !hasNext && UI_RESULT_MESSAGE.END_OF_LIST}
-        </div>
+            {/* 로딩/끝 상태 */}
+            <div className="py-6 text-center text-sm text-zinc-600">
+              {isLoadingMore && UI_STATUS_MESSAGE.LOADING}
+              {!isLoadingMore &&
+                filteredItems.length > 0 &&
+                !hasNext &&
+                UI_RESULT_MESSAGE.END_OF_LIST}
+            </div>
+          </>
+        )}
       </main>
     </PageShell>
   );
