@@ -15,7 +15,6 @@ import { ActionSecondaryLink } from "@/components/actions/ActionSecondaryLink";
 import { ActionPrimaryButton } from "@/components/actions/ActionPrimaryButton";
 import { GAMES } from "@/constants/games";
 import { buildLoginUrl } from "@/routes/utils/buildLoginUrl";
-import { UI_MESSAGE } from "@/constants/uiMessages";
 import { ROUTE_MESSAGE } from "@/constants/routeMessages";
 import { APP_ERROR_MESSAGE } from "@/constants/appErrorMessages";
 import { AppError } from "@/services/apiClient";
@@ -26,6 +25,7 @@ import { RESPONSE_SHAPE_ERROR_MESSAGE } from "@/constants/responseErrorMessages"
 import { validateGuideForm } from "@/features/guides/guideFormValidation";
 import type { GuideFormValue } from "@/types/guide";
 import { parseGuideId } from "@/routes/utils/parseGuideId";
+import { UI_STATUS_MESSAGE } from "@/constants/uiMessages";
 
 type LoadState =
   | { type: "loading" }
@@ -197,7 +197,7 @@ export default function GuideEdit() {
     return (
       <div className="min-h-dvh bg-zinc-50 p-4">
         <div className="mx-auto max-w-3xl rounded-xl border bg-white p-6 text-sm shadow-sm ">
-          {UI_MESSAGE.FETCHING}
+          {UI_STATUS_MESSAGE.LOADING}
         </div>
       </div>
     );

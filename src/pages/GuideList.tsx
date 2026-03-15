@@ -11,7 +11,7 @@ import { PageShell } from "@/components/shell/PageShell";
 import type { GuideListItem, GuideListSort } from "@/types/guide";
 import { ActionPrimaryLink } from "@/components/actions/ActionPrimaryLink";
 import { GAMES, type GameName } from "@/constants/games";
-import { UI_MESSAGE } from "@/constants/uiMessages";
+import { UI_RESULT_MESSAGE, UI_STATUS_MESSAGE } from "@/constants/uiMessages";
 import { formatDateToMinute } from "@/utils/formatDate";
 import { AppError } from "@/services/apiClient";
 import { AuthRequiredError } from "@/services/authErrors";
@@ -24,9 +24,9 @@ import { ResponseShapeError } from "@/services/responseErrors";
 import { RESPONSE_SHAPE_ERROR_MESSAGE } from "@/constants/responseErrorMessages";
 import type { GuideId } from "@/types/id";
 
-type ListFetchPhase = "idle" | "fetching";
-type LogoutPhase = "idle" | "submitting";
 type InitialLoadState = "idle" | "loading" | "success" | "error";
+type LoadMorePhase = "idle" | "loading";
+type LogoutPhase = "idle" | "submitting";
 
 const PAGE_SIZE = 20;
 const DEFAULT_SORT: GuideListSort = "updatedAt,desc";
@@ -57,11 +57,12 @@ export default function GuideList() {
   const [page, setPage] = useState(0);
   const [hasNext, setHasNext] = useState(true);
 
-  const [fetchPhase, setFetchPhase] = useState<ListFetchPhase>("idle");
-  const [logoutPhase, setLogoutPhase] = useState<LogoutPhase>("idle");
   const [initialLoadState, setInitialLoadState] = useState<InitialLoadState>("idle");
+  const [loadMorePhase, setLoadMorePhase] = useState<LoadMorePhase>("idle");
+  const [logoutPhase, setLogoutPhase] = useState<LogoutPhase>("idle");
 
-  const isFetching = fetchPhase === "fetching";
+  const isInitialLoading = initialLoadState === "loading";
+  const isLoadingMore = loadMorePhase === "loading";
   const isLoggingOut = logoutPhase === "submitting";
 
   const sentinelRef = useRef<HTMLDivElement | null>(null);
@@ -70,7 +71,7 @@ export default function GuideList() {
 
   // IntersectionObserver에서 최신 상태를 안정적으로 참조하기 위한 ref
   const pageRef = useRef(page);
-  const fetchPhaseRef = useRef(fetchPhase);
+  const loadMorePhaseRef = useRef(loadMorePhase);
   const hasNextRef = useRef(hasNext);
   const effectiveQueryRef = useRef(effectiveQuery);
   const sortRef = useRef<GuideListSort>(sort);
@@ -78,8 +79,8 @@ export default function GuideList() {
     pageRef.current = page;
   }, [page]);
   useEffect(() => {
-    fetchPhaseRef.current = fetchPhase;
-  }, [fetchPhase]);
+    loadMorePhaseRef.current = loadMorePhase;
+  }, [loadMorePhase]);
   useEffect(() => {
     hasNextRef.current = hasNext;
   }, [hasNext]);
@@ -119,7 +120,6 @@ export default function GuideList() {
 
     async function init() {
       clearAppMessage();
-      setFetchPhase("fetching");
       setInitialLoadState("loading");
 
       try {
@@ -182,10 +182,6 @@ export default function GuideList() {
           code: "UNKNOWN",
           message: LIST_GUIDES_ERROR_MESSAGE.UNKNOWN,
         });
-      } finally {
-        if (!ignore) {
-          setFetchPhase("idle");
-        }
       }
     }
 
@@ -197,10 +193,10 @@ export default function GuideList() {
   }, [effectiveQuery, sort, navigate, clearAppMessage, showAppMessage]);
 
   const loadMore = useCallback(async () => {
-    if (fetchPhaseRef.current === "fetching" || !hasNextRef.current) return;
+    if (loadMorePhaseRef.current === "loading" || !hasNextRef.current) return;
 
     clearAppMessage();
-    setFetchPhase("fetching");
+    setLoadMorePhase("loading");
 
     try {
       const nextPage = pageRef.current + 1;
@@ -258,10 +254,10 @@ export default function GuideList() {
         type: APP_MESSAGE_TYPE.ERROR,
         source: APP_MESSAGE_SOURCE.API,
         code: "LOAD_MORE_FAILED",
-        message: UI_MESSAGE.LOAD_MORE_FAILED,
+        message: UI_RESULT_MESSAGE.LOAD_MORE_FAILED,
       });
     } finally {
-      setFetchPhase("idle");
+      setLoadMorePhase("idle");
     }
   }, [navigate, clearAppMessage, showAppMessage]);
 
@@ -445,8 +441,9 @@ export default function GuideList() {
 
         {/* 로딩/끝 상태 */}
         <div className="py-6 text-center text-sm text-zinc-600">
-          {isFetching && UI_MESSAGE.FETCHING}
-          {!isFetching && items.length > 0 && !hasNext && UI_MESSAGE.END_OF_LIST}
+          {isInitialLoading && UI_STATUS_MESSAGE.LOADING}
+          {isLoadingMore && UI_STATUS_MESSAGE.LOADING}
+          {!isLoadingMore && items.length > 0 && !hasNext && UI_RESULT_MESSAGE.END_OF_LIST}
         </div>
       </main>
     </PageShell>

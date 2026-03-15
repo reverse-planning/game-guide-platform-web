@@ -1,5 +1,5 @@
 // src/components/actions/ActionDangerButton.tsx
-import { UI_MESSAGE } from "@/constants/uiMessages";
+import { UI_STATUS_MESSAGE } from "@/constants/uiMessages";
 import type { ReactNode } from "react";
 
 type ActionDangerButtonProps = {
@@ -39,7 +39,7 @@ export function ActionDangerButton({
         className ?? "",
       ].join(" ")}
     >
-      {loading ? UI_MESSAGE.SUBMITTING : children}
+      {loading ? UI_STATUS_MESSAGE.SUBMITTING : children}
     </button>
   );
 }

@@ -1,5 +1,5 @@
 // src/components/gnb/GnbUserStatus.tsx
-import { UI_MESSAGE } from "@/constants/uiMessages";
+import { UI_STATUS_MESSAGE } from "@/constants/uiMessages";
 import { ActionGhostButton } from "@/components/actions/ActionGhostButton";
 import { GnbUserBadge } from "./GnbUserBadge";
 
@@ -14,7 +14,7 @@ export function GnbUserStatus({ nickname, onLogout, isLoggingOut }: GnbUserStatu
     <div className="flex items-center gap-3">
       <GnbUserBadge nickname={nickname} />
       <ActionGhostButton onClick={onLogout} disabled={isLoggingOut}>
-        {isLoggingOut ? UI_MESSAGE.LOGGING_OUT : "로그아웃"}
+        {isLoggingOut ? UI_STATUS_MESSAGE.LOGGING_OUT : "로그아웃"}
       </ActionGhostButton>
     </div>
   );

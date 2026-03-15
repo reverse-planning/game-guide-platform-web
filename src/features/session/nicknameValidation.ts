@@ -1,5 +1,5 @@
 // src/features/session/nicknameValidation.ts
-import { UI_MESSAGE } from "@/constants/uiMessages";
+import { UI_VALIDATION_MESSAGE } from "@/constants/uiMessages";
 
 export type NicknameValidationResult = { ok: true; value: string } | { ok: false; message: string };
 
@@ -13,7 +13,7 @@ export function validateNickname(value: unknown): NicknameValidationResult {
   if (!nickname) {
     return {
       ok: false,
-      message: UI_MESSAGE.REQUIRED_NICKNAME,
+      message: UI_VALIDATION_MESSAGE.REQUIRED_NICKNAME,
     };
   }
 

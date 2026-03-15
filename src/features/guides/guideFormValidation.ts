@@ -1,6 +1,6 @@
 // src/features/guides/guideFormValidation.ts
 import { GAMES, type GameName } from "@/constants/games";
-import { UI_MESSAGE } from "@/constants/uiMessages";
+import { UI_VALIDATION_MESSAGE } from "@/constants/uiMessages";
 import type { GuideFormValue } from "@/types/guide";
 
 export type GuideFormInput = {
@@ -29,7 +29,7 @@ export function validateGuideForm(input: GuideFormInput): GuideFormValidationRes
   if (!title) {
     return {
       ok: false,
-      message: UI_MESSAGE.REQUIRED_FIELDS,
+      message: UI_VALIDATION_MESSAGE.REQUIRED_FIELDS,
       field: "title",
     };
   }
@@ -37,7 +37,7 @@ export function validateGuideForm(input: GuideFormInput): GuideFormValidationRes
   if (!game) {
     return {
       ok: false,
-      message: UI_MESSAGE.REQUIRED_FIELDS,
+      message: UI_VALIDATION_MESSAGE.REQUIRED_FIELDS,
       field: "game",
     };
   }
@@ -45,7 +45,7 @@ export function validateGuideForm(input: GuideFormInput): GuideFormValidationRes
   if (!body) {
     return {
       ok: false,
-      message: UI_MESSAGE.REQUIRED_FIELDS,
+      message: UI_VALIDATION_MESSAGE.REQUIRED_FIELDS,
       field: "body",
     };
   }
@@ -53,7 +53,7 @@ export function validateGuideForm(input: GuideFormInput): GuideFormValidationRes
   if (!isGameName(game)) {
     return {
       ok: false,
-      message: UI_MESSAGE.INVALID_GAME,
+      message: UI_VALIDATION_MESSAGE.INVALID_GAME,
       field: "game",
     };
   }

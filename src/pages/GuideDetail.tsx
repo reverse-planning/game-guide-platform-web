@@ -14,7 +14,6 @@ import { ActionSecondaryLink } from "@/components/actions/ActionSecondaryLink";
 import { ActionDangerButton } from "@/components/actions/ActionDangerButton";
 import { buildLoginUrl } from "@/routes/utils/buildLoginUrl";
 import { ROUTE_MESSAGE } from "@/constants/routeMessages";
-import { UI_MESSAGE } from "@/constants/uiMessages";
 import { formatDateToMinute } from "@/utils/formatDate";
 import { useSessionView } from "@/stores/sessionSelectors";
 import { AppError } from "@/services/apiClient";
@@ -25,12 +24,16 @@ import { ResponseShapeError } from "@/services/responseErrors";
 import { RESPONSE_SHAPE_ERROR_MESSAGE } from "@/constants/responseErrorMessages";
 import { GnbUserBadge } from "@/components/gnb/GnbUserBadge";
 import { parseGuideId } from "@/routes/utils/parseGuideId";
+import { UI_STATUS_MESSAGE } from "@/constants/uiMessages";
+import { ConfirmModal } from "@/components/modals/ConfirmModal";
 
 type LoadState =
   | { type: "idle" }
   | { type: "loading" }
   | { type: "success"; data: GuideDetailType }
   | { type: "loadFailed" };
+
+type DeletePhase = "idle" | "deleting";
 
 export default function GuideDetail() {
   const navigate = useNavigate();
@@ -42,7 +45,10 @@ export default function GuideDetail() {
 
   const [state, setState] = useState<LoadState>({ type: "idle" });
   const [pageMessage, setPageMessage] = useState<string | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deletePhase, setDeletePhase] = useState<DeletePhase>("idle");
 
+  const isDeleting = deletePhase === "deleting";
   const detail = state.type === "success" ? state.data : null;
   const isOwner = detail !== null && sessionNickname !== null && sessionNickname === detail.author;
 
@@ -102,13 +108,11 @@ export default function GuideDetail() {
     };
   }, [id, navigate, clearAppMessage]);
 
-  const onDelete = async () => {
-    if (id === null) return;
-
-    const ok = window.confirm("정말 삭제할까요?");
-    if (!ok) return;
+  const onConfirmDelete = async () => {
+    if (id === null || isDeleting) return;
 
     clearAppMessage();
+    setDeletePhase("deleting");
 
     try {
       await deleteGuide(id);
@@ -146,11 +150,14 @@ export default function GuideDetail() {
         code: "UNKNOWN",
         message: DELETE_GUIDE_ERROR_MESSAGE.UNKNOWN,
       });
+    } finally {
+      setDeletePhase("idle");
+      setIsDeleteModalOpen(false);
     }
   };
 
   const content = (() => {
-    if (state.type === "idle" || state.type === "loading") return UI_MESSAGE.FETCHING;
+    if (state.type === "idle" || state.type === "loading") return UI_STATUS_MESSAGE.LOADING;
     if (state.type === "loadFailed") return pageMessage;
     return null;
   })();
@@ -205,13 +212,28 @@ export default function GuideDetail() {
               {isOwner && (
                 <div className="flex justify-end gap-2">
                   <ActionSecondaryLink to={`/guides/${id}/edit`}>수정</ActionSecondaryLink>
-                  <ActionDangerButton onClick={onDelete}>삭제</ActionDangerButton>
+                  <ActionDangerButton onClick={() => setIsDeleteModalOpen(true)}>
+                    삭제
+                  </ActionDangerButton>
                 </div>
               )}
             </div>
           </article>
         )}
       </main>
+
+      <ConfirmModal
+        open={isDeleteModalOpen}
+        title="공략을 삭제할까요?"
+        description="삭제한 공략은 복구할 수 없습니다."
+        confirmText="삭제"
+        isConfirming={isDeleting}
+        onConfirm={onConfirmDelete}
+        onClose={() => {
+          if (isDeleting) return;
+          setIsDeleteModalOpen(false);
+        }}
+      />
     </PageShell>
   );
 }

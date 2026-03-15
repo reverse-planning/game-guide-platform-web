@@ -1,5 +1,5 @@
 // src/components/actions/ActionPrimaryButton.tsx
-import { UI_MESSAGE } from "@/constants/uiMessages";
+import { UI_STATUS_MESSAGE } from "@/constants/uiMessages";
 import type { ReactNode } from "react";
 
 type ActionPrimaryButtonProps = {
@@ -38,7 +38,7 @@ export function ActionPrimaryButton({
         className ?? "",
       ].join(" ")}
     >
-      {loading ? UI_MESSAGE.SUBMITTING : children}
+      {loading ? UI_STATUS_MESSAGE.SUBMITTING : children}
     </button>
   );
 }
