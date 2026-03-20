@@ -30,7 +30,7 @@ type LogoutPhase = "idle" | "submitting";
 
 const PAGE_SIZE = 20;
 const DEFAULT_SORT: GuideListSort = "updatedAt,desc";
-const ROOT_MARGIN = "200px";
+const ROOT_MARGIN = "2px";
 const DEBOUNCE_MS = 250;
 
 const SORT_OPTIONS: Array<{ label: string; value: GuideListSort }> = [
@@ -297,7 +297,7 @@ export default function GuideList() {
     }
   }, [logoutPhase, navigate, clearAppMessage, showAppMessage]);
 
-  // ✅ 무한 스크롤: IntersectionObserver (관찰만, 데이터는 service가 담당)
+  // ✅ 무한 스크롤: IntersectionObserver
   useEffect(() => {
     if (initialLoadState !== "success") return;
 
@@ -307,14 +307,36 @@ export default function GuideList() {
     const io = new IntersectionObserver(
       (entries) => {
         const [entry] = entries;
-        if (entry?.isIntersecting) loadMore();
+        if (entry?.isIntersecting) {
+          void loadMore();
+        }
       },
       { root: null, rootMargin: ROOT_MARGIN, threshold: 0 },
     );
 
     io.observe(el);
-    return () => io.disconnect();
+
+    return () => {
+      io.disconnect();
+    };
   }, [initialLoadState, loadMore]);
+
+  // ✅ viewport를 못 채우는 경우 보정 로직
+  useEffect(() => {
+    if (initialLoadState !== "success") return;
+    if (loadMorePhase !== "idle") return;
+    if (!hasNext) return;
+
+    const el = sentinelRef.current;
+    if (!el) return;
+
+    const rect = el.getBoundingClientRect();
+    const isSentinelVisible = rect.top <= window.innerHeight && rect.bottom >= 0;
+
+    if (isSentinelVisible) {
+      void loadMore();
+    }
+  }, [filteredItems.length, initialLoadState, loadMorePhase, hasNext, loadMore]);
 
   const onCardClick = (id: GuideId) => {
     // 드래그로 텍스트 선택 중이면 이동 금지
