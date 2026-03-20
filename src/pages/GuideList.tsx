@@ -25,12 +25,12 @@ import { RESPONSE_SHAPE_ERROR_MESSAGE } from "@/constants/responseErrorMessages"
 import type { GuideId } from "@/types/id";
 
 type InitialLoadState = "idle" | "loading" | "success" | "error";
-type LoadMorePhase = "idle" | "loading";
+type LoadMorePhase = "idle" | "loading" | "autofilling";
 type LogoutPhase = "idle" | "submitting";
 
 const PAGE_SIZE = 20;
 const DEFAULT_SORT: GuideListSort = "updatedAt,desc";
-const ROOT_MARGIN = "2px";
+const ROOT_MARGIN = "200px";
 const DEBOUNCE_MS = 250;
 
 const SORT_OPTIONS: Array<{ label: string; value: GuideListSort }> = [
@@ -63,6 +63,7 @@ export default function GuideList() {
 
   const isInitialLoading = initialLoadState === "loading";
   const isLoadingMore = loadMorePhase === "loading";
+  const isAutoFilling = loadMorePhase === "autofilling";
   const isLoggingOut = logoutPhase === "submitting";
 
   const sentinelRef = useRef<HTMLDivElement | null>(null);
@@ -113,6 +114,14 @@ export default function GuideList() {
     return items.filter((item) => item.game === game);
   }, [items, game]);
 
+  const isSentinelVisibleInViewport = useCallback(() => {
+    const el = sentinelRef.current;
+    if (!el) return false;
+
+    const rect = el.getBoundingClientRect();
+    return rect.top <= window.innerHeight && rect.bottom >= 0;
+  }, []);
+
   // ✅ effectiveQuery/정렬 변경 시: 서버에서 0페이지부터 다시 로드
   // (게임 필터는 프론트 가공이므로 서버 재요청 트리거에 포함하지 않음)
   useEffect(() => {
@@ -132,6 +141,7 @@ export default function GuideList() {
         setItems(data.items);
         setPage(0);
         setHasNext(data.nextPage !== null);
+        setLoadMorePhase("idle");
         setInitialLoadState("success");
       } catch (err) {
         if (ignore) return;
@@ -144,6 +154,7 @@ export default function GuideList() {
         setItems([]);
         setPage(0);
         setHasNext(false);
+        setLoadMorePhase("idle");
         setInitialLoadState("error");
 
         if (err instanceof AppError) {
@@ -185,7 +196,7 @@ export default function GuideList() {
       }
     }
 
-    init();
+    void init();
 
     return () => {
       ignore = true;
@@ -193,7 +204,7 @@ export default function GuideList() {
   }, [effectiveQuery, sort, navigate, clearAppMessage, showAppMessage]);
 
   const loadMore = useCallback(async () => {
-    if (loadMorePhaseRef.current === "loading" || !hasNextRef.current) return;
+    if (loadMorePhaseRef.current !== "idle" || !hasNextRef.current) return;
 
     clearAppMessage();
     setLoadMorePhase("loading");
@@ -261,6 +272,101 @@ export default function GuideList() {
     }
   }, [navigate, clearAppMessage, showAppMessage]);
 
+  const nextFrame = () =>
+    new Promise<void>((resolve) => {
+      requestAnimationFrame(() => resolve());
+    });
+
+  const fillViewport = useCallback(async () => {
+    if (loadMorePhaseRef.current !== "idle" || !hasNextRef.current) return;
+
+    clearAppMessage();
+    setLoadMorePhase("autofilling");
+
+    try {
+      let nextPage = pageRef.current;
+      let nextHasNext: boolean = hasNextRef.current;
+
+      while (nextHasNext) {
+        const buffer: GuideListItem[] = [];
+        let bufferedPage = nextPage;
+        let bufferedHasNext: boolean = nextHasNext;
+
+        // 한 번에 너무 많이 가져오지 않도록 배치 단위 제한
+        for (let i = 0; i < 3 && bufferedHasNext; i += 1) {
+          bufferedPage += 1;
+
+          const data = await listGuides({
+            query: effectiveQueryRef.current,
+            page: bufferedPage,
+            size: PAGE_SIZE,
+            sort: sortRef.current,
+          });
+
+          buffer.push(...data.items);
+          bufferedHasNext = data.nextPage !== null;
+        }
+
+        if (buffer.length === 0) break;
+
+        setItems((prev) => [...prev, ...buffer]);
+        setPage(bufferedPage);
+        setHasNext(bufferedHasNext);
+
+        nextPage = bufferedPage;
+        nextHasNext = bufferedHasNext;
+
+        await nextFrame();
+
+        if (!isSentinelVisibleInViewport()) break;
+      }
+    } catch (err) {
+      if (err instanceof AuthRequiredError) {
+        navigate(buildLoginUrl(window.location.href), { replace: true });
+        return;
+      }
+
+      if (err instanceof AppError) {
+        showAppMessage({
+          type: APP_MESSAGE_TYPE.ERROR,
+          source: APP_MESSAGE_SOURCE.API,
+          code: err.code,
+          message: APP_ERROR_MESSAGE[err.code],
+        });
+        return;
+      }
+
+      if (err instanceof ResponseShapeError) {
+        showAppMessage({
+          type: APP_MESSAGE_TYPE.ERROR,
+          source: APP_MESSAGE_SOURCE.API,
+          code: err.code,
+          message: RESPONSE_SHAPE_ERROR_MESSAGE[err.code],
+        });
+        return;
+      }
+
+      if (err instanceof ListGuidesError) {
+        showAppMessage({
+          type: APP_MESSAGE_TYPE.ERROR,
+          source: APP_MESSAGE_SOURCE.API,
+          code: err.code,
+          message: LIST_GUIDES_ERROR_MESSAGE[err.code],
+        });
+        return;
+      }
+
+      showAppMessage({
+        type: APP_MESSAGE_TYPE.ERROR,
+        source: APP_MESSAGE_SOURCE.API,
+        code: "LOAD_MORE_FAILED",
+        message: UI_RESULT_MESSAGE.LOAD_MORE_FAILED,
+      });
+    } finally {
+      setLoadMorePhase("idle");
+    }
+  }, [clearAppMessage, navigate, showAppMessage, isSentinelVisibleInViewport]);
+
   const onLogout = useCallback(async () => {
     if (logoutPhase === "submitting") return;
 
@@ -326,17 +432,17 @@ export default function GuideList() {
     if (initialLoadState !== "success") return;
     if (loadMorePhase !== "idle") return;
     if (!hasNext) return;
+    if (!isSentinelVisibleInViewport()) return;
 
-    const el = sentinelRef.current;
-    if (!el) return;
-
-    const rect = el.getBoundingClientRect();
-    const isSentinelVisible = rect.top <= window.innerHeight && rect.bottom >= 0;
-
-    if (isSentinelVisible) {
-      void loadMore();
-    }
-  }, [filteredItems.length, initialLoadState, loadMorePhase, hasNext, loadMore]);
+    void fillViewport();
+  }, [
+    filteredItems.length,
+    initialLoadState,
+    loadMorePhase,
+    hasNext,
+    fillViewport,
+    isSentinelVisibleInViewport,
+  ]);
 
   const onCardClick = (id: GuideId) => {
     // 드래그로 텍스트 선택 중이면 이동 금지
@@ -475,6 +581,7 @@ export default function GuideList() {
             <div className="py-6 text-center text-sm text-zinc-600">
               {isLoadingMore && UI_STATUS_MESSAGE.LOADING}
               {!isLoadingMore &&
+                !isAutoFilling &&
                 filteredItems.length > 0 &&
                 !hasNext &&
                 UI_RESULT_MESSAGE.END_OF_LIST}
